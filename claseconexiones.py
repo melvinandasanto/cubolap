@@ -1,54 +1,71 @@
-from Conexiones import conexionmysql, conexionsqlserver
-from Conexiones.conexionmysql import ConexionMYSQL
-from Conexiones.conexionsqlserver import ConexionSQLServer
+import pyodbc
+import mysql.connector
 
-class ClaseConexiones:
-    def __init__(self):
-        # Diccionario para almacenar conexiones
-        self.conexiones = {}
 
-    def agregar_conexion(self, nombre, gestor, **kwargs):
-        """Agregar una conexión según el gestor"""
-        if gestor.lower() == "mysql":
-            self.conexiones[nombre] = ConexionMYSQL(**kwargs)
-        elif gestor.lower() == "sqlserver":
-            self.conexiones[nombre] = ConexionSQLServer(**kwargs)
+class Conexion:
+    def __init__(self, gestor, host, database, user=None, password=None):
+        self.gestor = gestor.lower()
+        self.host = host
+        self.database = database
+        self.user = user
+        self.password = password
+        self.conexion = None
+        self.cursor = None
+
+    def conectar(self):
+        if self.gestor == "mysql":
+            self.conexion = mysql.connector.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database
+            )
+
+        elif self.gestor == "sqlserver":
+            self.conexion = pyodbc.connect(
+                'DRIVER={ODBC Driver 17 for SQL Server};'
+                f'SERVER={self.host};'
+                f'DATABASE={self.database};'
+                'Trusted_Connection=yes;'
+            )
+
         else:
             raise ValueError("Gestor no soportado")
 
-    def obtener_conexion(self, nombre):
-        """Obtener objeto de conexión"""
-        if nombre not in self.conexiones:
-            raise ValueError(f"No existe la conexión '{nombre}'")
-        return self.conexiones[nombre]
+        self.cursor = self.conexion.cursor()
 
-    def probar_conexion(self, nombre):
-        """Probar la conexión usando la clase correspondiente"""
-        if nombre not in self.conexiones:
-            raise ValueError(f"No existe la conexión '{nombre}'")
+    def probar_conexion(self):
         try:
-            conn = self.conexiones[nombre].conectar()
-            conn.close()
+            self.conectar()
             return True
         except Exception as e:
-            print(f"Error al conectar: {e}")
+            print("Error:", e)
             return False
+        finally:
+            self.cerrar()
 
-    def actualizar_conexion(self, nombre, **kwargs):
-        """Actualizar parámetros de una conexión"""
-        if nombre not in self.conexiones:
-            raise ValueError(f"No existe la conexión '{nombre}'")
-        # recrea la conexión con nuevos parámetros
-        gestor = self.conexiones[nombre].gestor
-        self.agregar_conexion(nombre, gestor, **kwargs)
+    def ejecutar_sql(self, consulta, valores=None, uno=False, todos=False):
+        try:
+            self.conectar()
+            self.cursor.execute(consulta, valores)
 
-    def eliminar_conexion(self, nombre):
-        """Eliminar una conexión"""
-        if nombre in self.conexiones:
-            del self.conexiones[nombre]
-        else:
-            raise ValueError(f"No existe la conexión '{nombre}'")
+            if uno:
+                return self.cursor.fetchone()
+            elif todos:
+                return self.cursor.fetchall()
+            else:
+                self.conexion.commit()
+                return True
 
-    def listar_conexiones(self):
-        """Listar todas las conexiones guardadas"""
-        return list(self.conexiones.keys())
+        except Exception as e:
+            print("Error:", e)
+            return None
+
+        finally:
+            self.cerrar()
+
+    def cerrar(self):
+        if self.cursor:
+            self.cursor.close()
+        if self.conexion:
+            self.conexion.close()
