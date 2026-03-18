@@ -1,4 +1,4 @@
-from claseconexiones import ClaseConexiones
+from conectar.claseconectar import ClaseConexiones
 
 class CrudConexiones:
     def __init__(self, idconexion=None, nombreconexion=None, gestor=None, host=None, puerto=None, usuario=None, contrasenia=None, basedatos=None):

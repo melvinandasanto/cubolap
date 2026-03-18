@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QWidget, QLabel, QLineEdit, QPushButton,
     QVBoxLayout, QHBoxLayout, QRadioButton, QButtonGroup, QMessageBox
 )
-from claseconexiones import ClaseConexiones
+from conectar.claseconectar import ClaseConexiones
 
 class FormConexiones(QWidget):
     def __init__(self):
