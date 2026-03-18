@@ -4,7 +4,8 @@ from PyQt6.QtWidgets import (
     QPushButton, QVBoxLayout, QComboBox, QMessageBox
 )
 
-from conectar.claseconectar import Conexion
+from claseconectar import Conexion
+from menu import Menu
 
 
 class FormConexion(QWidget):
@@ -19,6 +20,9 @@ class FormConexion(QWidget):
         self.txt_host = QLineEdit()
         self.txt_host.setPlaceholderText("Host / Server")
 
+        self.txt_port = QLineEdit()
+        self.txt_port.setPlaceholderText("Puerto (solo MySQL)")
+
         self.txt_user = QLineEdit()
         self.txt_user.setPlaceholderText("Usuario (solo MySQL)")
 
@@ -30,7 +34,7 @@ class FormConexion(QWidget):
         self.txt_database.setPlaceholderText("Base de datos")
 
         # 🔹 Botón
-        self.btn_probar = QPushButton("Probar Conexión")
+        self.btn_probar = QPushButton("Conectar")
         self.btn_probar.clicked.connect(self.probar_conexion)
 
         # 🔹 Layout
@@ -41,6 +45,9 @@ class FormConexion(QWidget):
 
         layout.addWidget(QLabel("Host / Server"))
         layout.addWidget(self.txt_host)
+
+        layout.addWidget(QLabel("Puerto"))
+        layout.addWidget(self.txt_port)
 
         layout.addWidget(QLabel("Usuario"))
         layout.addWidget(self.txt_user)
@@ -56,29 +63,39 @@ class FormConexion(QWidget):
         self.setLayout(layout)
 
         self.setWindowTitle("Conexión a Base de Datos")
-        self.resize(300, 300)
+        self.resize(300, 350)
 
     def probar_conexion(self):
         gestor = self.combo_gestor.currentText()
         host = self.txt_host.text()
+        port = self.txt_port.text()
         user = self.txt_user.text()
         password = self.txt_password.text()
         database = self.txt_database.text()
 
-        # 🔹 Crear conexión
-        conexion = Conexion(
-            gestor=gestor,
-            host=host,
-            database=database,
-            user=user,
-            password=password
-        )
+        try:
+            conexion = Conexion(
+                gestor=gestor,
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port if gestor == "mysql" else None
+            )
 
-        # 🔹 Probar
-        if conexion.probar_conexion():
-            QMessageBox.information(self, "Éxito", "Conexión exitosa ✅")
-        else:
-            QMessageBox.critical(self, "Error", "No se pudo conectar ❌")
+            if conexion.probar_conexion():
+                QMessageBox.information(self, "Éxito", "Conexión exitosa ✅")
+                self.abrir_menu()
+            else:
+                QMessageBox.critical(self, "Error", "No se pudo conectar ❌")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+
+    def abrir_menu(self):
+        self.menu = Menu()
+        self.menu.show()
+        self.close()
 
 
 if __name__ == "__main__":

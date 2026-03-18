@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import font
+from autenticacion import Autenticacion
+from tkinter import messagebox
 
 class FormularioOLAP:
     def __init__(self, root):
@@ -42,9 +44,18 @@ class FormularioOLAP:
         self.pass_entry.pack(fill="x", pady=(5, 30), ipady=8)
 
         # Botón Iniciar Sesión
-        self.btn_login = tk.Button(self.container, text="Iniciar Sesión", bg=self.btn_color, fg="white", 
-                                   activebackground="#357abd", activeforeground="white",
-                                   font=self.btn_font, borderwidth=0, cursor="hand2")
+        self.btn_login = tk.Button(
+            self.container,
+            text="Iniciar Sesión",
+            bg=self.btn_color,
+            fg="white",
+            activebackground="#357abd",
+            activeforeground="white",
+            font=self.btn_font,
+            borderwidth=0,
+            cursor="hand2",
+            command=self.iniciar_sesion   # 👈 AQUÍ
+)
         self.btn_login.pack(fill="x", ipady=10)
 
         # --- Sección de Estado Inferior ---

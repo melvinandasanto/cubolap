@@ -3,12 +3,13 @@ import mysql.connector
 
 
 class Conexion:
-    def __init__(self, gestor, host, database, user=None, password=None):
+    def __init__(self, gestor, host, database, user=None, password=None, port=None):
         self.gestor = gestor.lower()
         self.host = host
         self.database = database
         self.user = user
         self.password = password
+        self.port = port
         self.conexion = None
         self.cursor = None
 
@@ -18,7 +19,8 @@ class Conexion:
                 host=self.host,
                 user=self.user,
                 password=self.password,
-                database=self.database
+                database=self.database,
+                port=int(self.port) if self.port else 3306
             )
 
         elif self.gestor == "sqlserver":
@@ -41,26 +43,6 @@ class Conexion:
         except Exception as e:
             print("Error:", e)
             return False
-        finally:
-            self.cerrar()
-
-    def ejecutar_sql(self, consulta, valores=None, uno=False, todos=False):
-        try:
-            self.conectar()
-            self.cursor.execute(consulta, valores)
-
-            if uno:
-                return self.cursor.fetchone()
-            elif todos:
-                return self.cursor.fetchall()
-            else:
-                self.conexion.commit()
-                return True
-
-        except Exception as e:
-            print("Error:", e)
-            return None
-
         finally:
             self.cerrar()
 
