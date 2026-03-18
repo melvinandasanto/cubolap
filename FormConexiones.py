@@ -4,13 +4,13 @@ from PyQt6.QtWidgets import (
     QWidget, QLabel, QLineEdit, QPushButton,
     QVBoxLayout, QHBoxLayout, QRadioButton, QButtonGroup, QMessageBox
 )
-from claseconectar import ClaseConexiones
+from claseconectar import Conexion
 
 class FormConexiones(QWidget):
     def __init__(self):
         super().__init__()
         self.iniciarGUI()
-        self.conexion = ClaseConexiones()
+        self.conexion = Conexion()
 
     def iniciarGUI(self):
         self.setWindowTitle("CONEXIONES")

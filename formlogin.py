@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import font
-from autenticacion import Autenticacion
+from claseLogin import Autenticacion
 from tkinter import messagebox
 
 class FormularioOLAP:
@@ -62,10 +62,19 @@ class FormularioOLAP:
         self.footer = tk.Frame(self.container, bg=self.card_color)
         self.footer.pack(fill="x", pady=(30, 0))
 
-      
-        
+    def iniciar_sesion(self):
+        usuario = self.user_entry.get()
+        contrasena = self.pass_entry.get()
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = FormularioOLAP(root)
-    root.mainloop()
+    # 🔹 Configuración de tu BD (ajustala a tu caso)
+        auth = Autenticacion(
+            gestor="sqlserver",   # o mysql
+            host="PC-JULIO",
+            database="CuboOlap"
+    )
+
+        if auth.login(usuario, contrasena):
+            messagebox.showinfo("Éxito", "Inicio de sesión correcto ✅")
+        else:
+            messagebox.showerror("Error", "Usuario o contraseña incorrectos ❌")
+        
