@@ -51,3 +51,22 @@ class Conexion:
             self.cursor.close()
         if self.conexion:
             self.conexion.close()
+
+    def ejecutar_sql(self, sql, params=None, uno=False):
+        self.conectar()
+        try:
+            if params:
+                self.cursor.execute(sql, params)
+            else:
+                self.cursor.execute(sql)
+
+            if sql.strip().upper().startswith("SELECT"):
+                resultado = self.cursor.fetchone() if uno else self.cursor.fetchall()
+                return resultado
+            else:
+                self.conexion.commit()
+        except Exception as e:
+            print("Error al ejecutar SQL:", e)
+            return None
+        finally:
+            self.cerrar()

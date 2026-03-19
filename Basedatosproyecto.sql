@@ -10,7 +10,6 @@ CREATE TABLE rol (
 
     CREATE TABLE usuario (
         idusuario INT IDENTITY(1,1) PRIMARY KEY,
-        numeroidentidad VARCHAR(15) NOT NULL UNIQUE,
         nombre VARCHAR(50) NOT NULL,
         apellido VARCHAR(50) NOT NULL,
         contrasenia VARCHAR(50) NOT NULL,

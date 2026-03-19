@@ -77,4 +77,6 @@ class FormularioOLAP:
             messagebox.showinfo("Éxito", "Inicio de sesión correcto ✅")
         else:
             messagebox.showerror("Error", "Usuario o contraseña incorrectos ❌")
+
+
         
