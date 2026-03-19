@@ -1,38 +1,38 @@
 use master;
-CREATE DATABASE CuboLAP;
+CREATE DATABASE cubolap;
 GO
 
-CREATE TABLE ROL (
-    IDRol INT IDENTITY(1,1) PRIMARY KEY,
-        NombreRol VARCHAR(50) NOT NULL UNIQUE
+CREATE TABLE rol (
+    idrol INT IDENTITY(1,1) PRIMARY KEY,
+    nombrerol VARCHAR(50) NOT NULL UNIQUE
     );
     GO
 
-    CREATE TABLE USUARIO (
-        IDUsuario INT IDENTITY(1,1) PRIMARY KEY,
-        NumeroIdentidad VARCHAR(15) NOT NULL UNIQUE,
-        Nombre VARCHAR(50) NOT NULL,
-        Apellido VARCHAR(50) NOT NULL,
-        Contrasena VARCHAR(100) NOT NULL,
-        IDRol INT NOT NULL,
-        Activo BIT NOT NULL DEFAULT 1,
-        CONSTRAINT FK_Usuario_Rol FOREIGN KEY (IDRol)
-        REFERENCES ROL(IDRol) ON DELETE CASCADE
+    CREATE TABLE usuario (
+        idusuario INT IDENTITY(1,1) PRIMARY KEY,
+        numeroidentidad VARCHAR(15) NOT NULL UNIQUE,
+        nombre VARCHAR(50) NOT NULL,
+        apellido VARCHAR(50) NOT NULL,
+        contrasenia VARCHAR(50) NOT NULL,
+        idrol INT NOT NULL,
+        activo BIT NOT NULL DEFAULT 1,
+        CONSTRAINT FK_Usuario_Rol FOREIGN KEY (idrol)
+        REFERENCES ROL(idrol) ON DELETE CASCADE
     );
     GO
 
-    CREATE TABLE CONEXIONES (
+    CREATE TABLE conexiones (
         idconexion INT IDENTITY(1,1) PRIMARY KEY,
         nombreconexion VARCHAR(50) NOT NULL UNIQUE,
         gestor VARCHAR(20) NOT NULL CHECK (gestor IN ('SQL Server', 'MySQL')),
         host VARCHAR(100) NOT NULL,
         puerto INT NULL,
-        usuario VARCHAR(50) NOT NULL,
+        usuario VARCHAR(50) NULL,
         contrasenia VARCHAR(100) NOT NULL,
         basedatos VARCHAR(50) NOT NULL,
         CONSTRAINT CK_Puerto_Requerido CHECK (
-            (Gestor = 'SQL Server' AND Puerto IS NOT NULL) OR 
-            (Gestor = 'MySQL' AND Puerto IS NOT NULL)
+            (gestor = 'SQL Server' AND puerto IS NULL AND host IS NULL) OR 
+            (gestor = 'MySQL' AND puerto IS NOT NULL AND host IS NOT NULL)
         )
     );
     GO
