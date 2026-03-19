@@ -5,6 +5,8 @@ from PyQt6.QtWidgets import (
     QPushButton, QComboBox, QHeaderView, QFrame, QLineEdit, QMessageBox
 )
 from PyQt6.QtCore import Qt
+from claseconectar import Conectar
+from claseusuario import Usuario
 
 # Aquí deberías importar tu clase de lógica, por ejemplo:
 # from datos.clase_usuarios import ClaseUsuarios

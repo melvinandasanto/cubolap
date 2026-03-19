@@ -2,7 +2,7 @@ import pyodbc
 import mysql.connector
 
 
-class Conexion:
+class Conectar:
     def __init__(self, gestor, host, database, user=None, password=None, port=None):
         self.gestor = gestor.lower()
         self.host = host
