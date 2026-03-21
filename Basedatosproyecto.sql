@@ -11,7 +11,6 @@ CREATE TABLE rol (
     CREATE TABLE usuario (
         idusuario INT IDENTITY(1,1) PRIMARY KEY,
         nombre VARCHAR(50) NOT NULL,
-        apellido VARCHAR(50) NOT NULL,
         contrasenia VARCHAR(50) NOT NULL,
         idrol INT NOT NULL,
         activo BIT NOT NULL DEFAULT 1,
@@ -34,4 +33,7 @@ CREATE TABLE rol (
             (gestor = 'MySQL' AND puerto IS NOT NULL AND host IS NOT NULL)
         )
     );
+    GO
+
+    INSERT INTO rol (nombrerol) VALUES ('Administrador'), ('Usuario');
     GO
