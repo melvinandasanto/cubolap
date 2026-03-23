@@ -352,8 +352,7 @@ class GestionUsuariosApp(QMainWindow):
             QMessageBox.warning(self, "Error", "Seleccione un usuario válido para eliminar")
             return
 
-        confirmacion = QMessageBox.question(
-            self,
+        confirmacion = QMessageBox.question(            self,
             "Confirmar eliminación",
             f"¿Estás seguro de que deseas eliminar el usuario con ID {usuario_id}?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
