@@ -150,7 +150,7 @@ class GestionUsuariosApp(QMainWindow):
         self.btn_eliminar.clicked.connect(self.eliminar_usuario)
         form_layout.addWidget(self.btn_eliminar)
 
-        self.btn_limpiar = QPushButton("Nuevo Registro")
+        self.btn_limpiar = QPushButton("Limpiar Formulario")
         self.btn_limpiar.setObjectName("BtnAccion")
         self.btn_limpiar.clicked.connect(self.limpiar_formulario)
         form_layout.addWidget(self.btn_limpiar)

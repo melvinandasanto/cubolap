@@ -35,5 +35,11 @@ CREATE TABLE rol (
     );
     GO
 
-    INSERT INTO rol (nombrerol) VALUES ('Administrador'), ('Usuario');
+    CREATE TABLE rutas (
+    idruta INT IDENTITY(1,1) PRIMARY KEY,
+    nombreruta VARCHAR(150) NOT NULL UNIQUE,
+    );
     GO
+
+INSERT INTO rol (nombrerol) VALUES ('Administrador'), ('Usuario');
+GO
