@@ -1,24 +1,24 @@
-from claseconectar import Conexion
+from claseconectar import Conectar
 
 
 class Autenticacion:
     def __init__(self, gestor, host, database, user=None, password=None, port=None):
-        self.conexion = Conexion(
-            gestor=gestor,
-            host=host,
-            database=database,
-            user=user,
-            password=password,
-            port=port
-        )
+        self.conexion = Conectar()
+        self.conexion.gestor = gestor
+        self.conexion.host = host
+        self.conexion.database = database
+        self.conexion.user = user
+        self.conexion.password = password
+        self.conexion.port = port
+
+        if user and password:
+            self.conexion.trusted_connection = False
 
     def login(self, usuario, contrasena):
-        # 🔹 Usuario por defecto
         if usuario == "default" and contrasena == "00000":
             return True
 
         try:
-            # 🔹 Consulta (SQL Server usa ?, MySQL también lo acepta aquí con connector)
             consulta = "SELECT * FROM usuarios WHERE nombre = ? AND contrasena = ?"
 
             resultado = self.conexion.ejecutar_sql(

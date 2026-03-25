@@ -74,7 +74,9 @@ class AdministradorConexiones(QMainWindow):
         self.table.setHorizontalHeaderLabels(["Nombre", "Gestor", "Host", "Base de Datos"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         left_container.addWidget(self.table)
-        
+        #hentai
+
+
         # Ajustar el stretch para que la tabla use más espacio al expandir
         main_layout.addLayout(left_container, stretch=3)
 
@@ -123,6 +125,9 @@ class AdministradorConexiones(QMainWindow):
 
         form_layout.addSpacing(10)
 
+        #POrno
+
+        
         # Botones de Acción
         self.btn_probar = QPushButton("Probar Conexión")
         self.btn_probar.setObjectName("BtnProbar")
