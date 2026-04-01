@@ -1,13 +1,13 @@
 import sys
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, 
-    QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem, 
+    QApplication, QMainWindow, QWidget, QVBoxLayout,
+    QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
     QPushButton, QComboBox, QHeaderView, QFrame, QLineEdit, QMessageBox
 )
 from PyQt6.QtCore import Qt
+from claseusuario import Usuario
+from claseconectar import Conectar
 
-# Aquí deberías importar tu clase de lógica, por ejemplo:
-# from datos.clase_usuarios import ClaseUsuarios
 
 class GestionUsuariosApp(QMainWindow):
     def __init__(self):
@@ -15,50 +15,53 @@ class GestionUsuariosApp(QMainWindow):
 
         self.setWindowTitle("Sistema OLAP - Control de Accesos")
         self.resize(1100, 650)
-        
-        # Variable para controlar el ID (puedes obtener el último de tu BD)
-        self.proximo_id = 1 
-        
-        # Instancia de tu clase de conexión/lógica
-        # self.logica = ClaseUsuarios()
+
+        self.usuario = Usuario()
 
         self.iniciar_estilos()
         self.iniciar_gui()
+
+        self.cargar_roles()
+        self.cargar_estados()
+        self.cargar_usuarios_tabla()
+        self.limpiar_formulario()
 
     def iniciar_estilos(self):
         self.setStyleSheet("""
             QMainWindow { background-color: #1a2634; }
             QWidget { color: white; font-family: 'Segoe UI'; }
-            
+
             QMessageBox { background-color: #243447; }
             QMessageBox QLabel { color: white; font-size: 14px; }
-            QMessageBox QPushButton { 
-                background-color: #3d85c6; color: white; 
-                border-radius: 4px; padding: 5px 15px; 
+            QMessageBox QPushButton {
+                background-color: #3d85c6; color: white;
+                border-radius: 4px; padding: 5px 15px;
             }
 
-            QFrame#PanelLateral { 
+            QFrame#PanelLateral {
                 background-color: #243447; border-radius: 15px; border: 1px solid #3a4a5e;
             }
-            
-            QLabel#TituloSeccion { font-size: 18px; font-weight: bold; color: #3d85c6; margin-bottom: 15px; }
-            
-            QLineEdit { 
-                background-color: #304156; border: 1px solid #455a73; 
+
+            QLabel#TituloSeccion {
+                font-size: 18px; font-weight: bold; color: #3d85c6; margin-bottom: 15px;
+            }
+
+            QLineEdit {
+                background-color: #304156; border: 1px solid #455a73;
                 border-radius: 5px; padding: 10px; color: white; margin-bottom: 12px;
             }
             QLineEdit:read-only { background-color: #1b263b; color: #8ea1b4; }
-            
-            QComboBox { 
-                background-color: #304156; border: 1px solid #455a73; 
+
+            QComboBox {
+                background-color: #304156; border: 1px solid #455a73;
                 border-radius: 5px; padding: 8px; margin-bottom: 12px; color: white;
             }
-            
+
             QPushButton { font-weight: bold; border-radius: 5px; padding: 12px; }
             QPushButton#BtnPrincipal { background-color: #3d85c6; color: white; }
             QPushButton#BtnAccion { background-color: #3e5169; color: white; border: 1px solid #455a73; }
             QPushButton#BtnEliminar { background-color: #c63d3d; color: white; }
-            
+
             QTableWidget {
                 background-color: #0d1b2a; border: none; gridline-color: #243447;
                 selection-background-color: #3d85c6; color: white;
@@ -74,8 +77,9 @@ class GestionUsuariosApp(QMainWindow):
         main_layout = QHBoxLayout(central_widget)
         main_layout.setContentsMargins(25, 25, 25, 25)
 
-        # --- TABLA (IZQUIERDA) ---
+        # -------- TABLA --------
         left_layout = QVBoxLayout()
+
         lbl_lista = QLabel("Listado de Usuarios")
         lbl_lista.setStyleSheet("font-size: 20px; font-weight: bold; margin-bottom: 10px;")
         left_layout.addWidget(lbl_lista)
@@ -85,15 +89,17 @@ class GestionUsuariosApp(QMainWindow):
         self.table.setHorizontalHeaderLabels(["ID", "Nombre Usuario", "Rol", "Estado", "Contraseña"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.itemClicked.connect(self.cargar_datos_al_formulario)
-        
+
         left_layout.addWidget(self.table)
         main_layout.addLayout(left_layout, stretch=2)
 
-        # --- FORMULARIO (DERECHA) ---
+        # -------- PANEL DERECHO --------
         self.panel = QFrame()
         self.panel.setObjectName("PanelLateral")
         self.panel.setFixedWidth(320)
+
         form_layout = QVBoxLayout(self.panel)
         form_layout.setContentsMargins(20, 20, 20, 20)
 
@@ -113,18 +119,18 @@ class GestionUsuariosApp(QMainWindow):
 
         form_layout.addWidget(QLabel("Rol:"))
         self.cb_rol = QComboBox()
-        self.cb_rol.addItems(["Admin", "Analista", "Visualizadora"])
         form_layout.addWidget(self.cb_rol)
 
         form_layout.addWidget(QLabel("Contraseña:"))
-        self.txt_pass = QLineEdit()
-        self.txt_pass.setEchoMode(QLineEdit.EchoMode.Password)
-        form_layout.addWidget(self.txt_pass)
+        self.txt_contrasenia = QLineEdit()
+        self.txt_contrasenia.setEchoMode(QLineEdit.EchoMode.Password)
+        form_layout.addWidget(self.txt_contrasenia)
 
         form_layout.addWidget(QLabel("Estado de Cuenta:"))
         self.cb_estado = QComboBox()
-        self.cb_estado.addItems(["Activo", "Inactivo"])
-        self.cb_estado.setStyleSheet("color: #81c784; font-weight: bold; background-color: #304156;") 
+        self.cb_estado.setStyleSheet(
+            "color: #81c784; font-weight: bold; background-color: #304156;"
+        )
         form_layout.addWidget(self.cb_estado)
 
         form_layout.addSpacing(15)
@@ -144,18 +150,14 @@ class GestionUsuariosApp(QMainWindow):
         self.btn_eliminar.clicked.connect(self.eliminar_usuario)
         form_layout.addWidget(self.btn_eliminar)
 
-        self.btn_limpiar = QPushButton("Limpiar Formulario")
+        self.btn_limpiar = QPushButton("Nuevo Registro")
         self.btn_limpiar.setObjectName("BtnAccion")
-        self.btn_limpiar.clicked.connect(self.nuevo_registro)
+        self.btn_limpiar.clicked.connect(self.limpiar_formulario)
         form_layout.addWidget(self.btn_limpiar)
 
         form_layout.addStretch()
         main_layout.addWidget(self.panel)
-        
-        # Inicializar campos
-        self.nuevo_registro()
 
-    # --- Lógica de Interfaz ---
     def mostrar_mensaje(self, titulo, texto, icono=QMessageBox.Icon.Information):
         msg = QMessageBox(self)
         msg.setWindowTitle(titulo)
@@ -163,58 +165,185 @@ class GestionUsuariosApp(QMainWindow):
         msg.setIcon(icono)
         msg.exec()
 
-    def agregar_fila_tabla(self, id_u, nombre, rol, estado, password="********"):
-        row = self.table.rowCount()
-        self.table.insertRow(row)
-        datos = [str(id_u), nombre, rol, estado, password]
-        for i, val in enumerate(datos):
-            item = QTableWidgetItem(val)
-            item.setForeground(Qt.GlobalColor.white)
-            self.table.setItem(row, i, item)
+    def validar_campos(self):
+        nombre = self.txt_nombre.text().strip()
+        contrasenia = self.txt_contrasenia.text().strip()
+        es_edicion = self.txt_id.text().strip() != ""
+        if not nombre:
+            QMessageBox.warning(self, "Validación", "El nombre de usuario es obligatorio.")
+            self.txt_nombre.setFocus()
+            return False
+        # En nuevo registro, contraseña obligatoria
+        if not es_edicion and not contrasenia:
+            QMessageBox.warning(self, "Validación", "La contraseña es obligatoria.")
+            self.txt_contrasenia.setFocus()
+            return False
+
+        # En edición, puede quedar vacía para no cambiarla
+        return True
+
+    def cargar_roles(self):
+        try:
+            self.cb_rol.clear()
+            lista_roles = self.usuario.ListarRoles()
+
+            if lista_roles:
+                for fila in lista_roles:
+                    idrol = fila[0]
+                    nombrerol = fila[1]
+                    self.cb_rol.addItem(nombrerol, idrol)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudieron cargar los roles:\n{str(e)}")
+
+    def cargar_estados(self):
+        self.cb_estado.clear()
+        self.cb_estado.addItem("Activo", 1)
+        self.cb_estado.addItem("Inactivo", 0)
+
+    def obtener_usuario_desde_formulario(self):
+        texto_id = self.txt_id.text().strip()
+
+        self.usuario.IdUsuario = int(texto_id) if texto_id.isdigit() else None
+        self.usuario.Nombre = self.txt_nombre.text().strip()
+
+        # Solo asignar contraseña si el usuario escribió algo
+        contrasenia = self.txt_contrasenia.text().strip()
+        self.usuario.Contrasenia = contrasenia if contrasenia else None
+
+        self.usuario.IdRol = self.cb_rol.currentData()
+        self.usuario.Activo = self.cb_estado.currentData()
+
+    def limpiar_formulario(self):
+        self.txt_id.clear()
+        self.txt_nombre.clear()
+        self.txt_contrasenia.clear()
+        self.txt_contrasenia.setPlaceholderText("")
+
+        if self.cb_rol.count() > 0:
+            self.cb_rol.setCurrentIndex(0)
+
+        if self.cb_estado.count() > 0:
+            self.cb_estado.setCurrentIndex(0)
+
+        self.table.clearSelection()
 
     def cargar_datos_al_formulario(self, item):
         row = item.row()
+
         self.txt_id.setText(self.table.item(row, 0).text())
         self.txt_nombre.setText(self.table.item(row, 1).text())
-        self.cb_rol.setCurrentText(self.table.item(row, 2).text())
-        self.cb_estado.setCurrentText(self.table.item(row, 3).text())
-        self.txt_pass.setPlaceholderText("Dejar vacío para no cambiar")
 
-    def nuevo_registro(self):
-        self.txt_id.setText(str(self.proximo_id))
-        self.txt_nombre.clear()
-        self.txt_pass.clear()
-        self.txt_pass.setPlaceholderText("")
-        self.cb_rol.setCurrentIndex(0)
-        self.cb_estado.setCurrentIndex(0)
-        self.table.clearSelection()
+        idrol = self.table.item(row, 2).data(Qt.ItemDataRole.UserRole)
+        activo = self.table.item(row, 3).data(Qt.ItemDataRole.UserRole)
 
-    # --- Métodos para conectar con tu Clase ---
+        indice_rol = self.cb_rol.findData(idrol)
+        if indice_rol >= 0:
+            self.cb_rol.setCurrentIndex(indice_rol)
+
+        indice_estado = self.cb_estado.findData(activo)
+        if indice_estado >= 0:
+            self.cb_estado.setCurrentIndex(indice_estado)
+
+        self.txt_contrasenia.clear()
+        self.txt_contrasenia.setPlaceholderText("Dejar vacío para no cambiar")
+
+    def cargar_usuarios_tabla(self):
+        try:
+            self.table.setRowCount(0)
+            lista = self.usuario.Listar()
+
+            if lista:
+                for fila_num, fila in enumerate(lista):
+                    self.table.insertRow(fila_num)
+
+                    idusuario = fila[0]
+                    nombre = fila[1]
+                    idrol = fila[2]
+                    nombrerol = fila[3]
+                    activo = fila[4]
+
+                    estado_texto = "Activo" if activo else "Inactivo"
+
+                    item_id = QTableWidgetItem(str(idusuario))
+                    item_nombre = QTableWidgetItem(nombre)
+
+                    item_rol = QTableWidgetItem(nombrerol)
+                    item_rol.setData(Qt.ItemDataRole.UserRole, idrol)
+
+                    item_estado = QTableWidgetItem(estado_texto)
+                    item_estado.setData(Qt.ItemDataRole.UserRole, 1 if activo else 0)
+
+                    item_pass = QTableWidgetItem("********")
+
+                    for item_tabla in [item_id, item_nombre, item_rol, item_estado, item_pass]:
+                        item_tabla.setForeground(Qt.GlobalColor.white)
+
+                    self.table.setItem(fila_num, 0, item_id)
+                    self.table.setItem(fila_num, 1, item_nombre)
+                    self.table.setItem(fila_num, 2, item_rol)
+                    self.table.setItem(fila_num, 3, item_estado)
+                    self.table.setItem(fila_num, 4, item_pass)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo cargar la tabla:\n{str(e)}")
+
     def guardar_usuario(self):
-        if not self.txt_nombre.text():
-            self.mostrar_mensaje("Error", "El nombre es obligatorio.", QMessageBox.Icon.Warning)
+        if not self.validar_campos():
             return
-        
-        # 1. Llamar a tu clase: self.logica.insertar(self.txt_nombre.text(), ...)
-        # 2. Refrescar tabla o agregar localmente:
-        self.agregar_fila_tabla(self.txt_id.text(), self.txt_nombre.text(), 
-                               self.cb_rol.currentText(), self.cb_estado.currentText())
-        
-        self.proximo_id += 1
-        self.mostrar_mensaje("Éxito", "Usuario guardado en el sistema.")
-        self.nuevo_registro()
+
+        try:
+            self.obtener_usuario_desde_formulario()
+
+            if not self.usuario.Contrasenia:
+                QMessageBox.warning(self, "Validación", "La contraseña es obligatoria.")
+                self.txt_contrasenia.setFocus()
+                return
+
+            resultado = self.usuario.Guardar()
+
+            if resultado:
+                QMessageBox.information(self, "Éxito", "Usuario guardado correctamente")
+                self.cargar_usuarios_tabla()
+                self.limpiar_formulario()
+            else:
+                QMessageBox.warning(self, "Error", "No se pudo guardar el usuario")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo guardar el usuario:\n{str(e)}")
 
     def editar_usuario(self):
-        selected = self.table.currentRow()
-        if selected >= 0:
-            # 1. Llamar a tu clase: self.logica.actualizar(self.txt_id.text(), ...)
-            # 2. Actualizar tabla visual:
-            self.table.setItem(selected, 1, QTableWidgetItem(self.txt_nombre.text()))
-            self.table.setItem(selected, 2, QTableWidgetItem(self.cb_rol.currentText()))
-            self.table.setItem(selected, 3, QTableWidgetItem(self.cb_estado.currentText()))
-            self.mostrar_mensaje("Sistema", "Usuario actualizado correctamente.")
-        else:
-            self.mostrar_mensaje("Aviso", "Seleccione un usuario de la lista.", QMessageBox.Icon.Warning)
+        if not self.txt_id.text().strip().isdigit():
+            QMessageBox.warning(self, "Error", "Seleccione un usuario válido")
+            return
+
+        if not self.validar_campos():
+            return
+
+        try:
+            self.obtener_usuario_desde_formulario()
+
+            # Si no escribió contraseña nueva, conservar la actual de la BD
+            if not self.usuario.Contrasenia:
+                usuario_aux = Usuario()
+                encontrado = usuario_aux.Buscar(int(self.txt_id.text().strip()))
+                if encontrado:
+                    self.usuario.Contrasenia = usuario_aux.Contrasenia
+                else:
+                    QMessageBox.warning(self, "Error", "No se encontró el usuario a editar")
+                    return
+
+            resultado = self.usuario.Editar()
+
+            if resultado:
+                QMessageBox.information(self, "Éxito", "Usuario actualizado correctamente")
+                self.cargar_usuarios_tabla()
+                self.limpiar_formulario()
+            else:
+                QMessageBox.warning(self, "Error", "No se pudo actualizar el usuario")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo actualizar el usuario:\n{str(e)}")
 
     def eliminar_usuario(self):
         usuario_id = self.txt_id.text().strip()
@@ -223,8 +352,7 @@ class GestionUsuariosApp(QMainWindow):
             QMessageBox.warning(self, "Error", "Seleccione un usuario válido para eliminar")
             return
 
-        confirmacion = QMessageBox.question(
-            self,
+        confirmacion = QMessageBox.question(            self,
             "Confirmar eliminación",
             f"¿Estás seguro de que deseas eliminar el usuario con ID {usuario_id}?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No

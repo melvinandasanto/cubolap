@@ -3,7 +3,7 @@ from tkinter import font
 from claseLogin import Autenticacion
 from tkinter import messagebox
 
-class FormularioOLAP:
+class Login:
     def __init__(self, root):
         self.root = root
         self.root.title("Sistema de Análisis OLAP")
@@ -68,5 +68,5 @@ class FormularioOLAP:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = FormularioOLAP(root)
+    app = Login(root)
     root.mainloop()
