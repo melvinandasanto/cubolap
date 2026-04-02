@@ -21,13 +21,13 @@ CREATE TABLE rol (
 
     CREATE TABLE conexiones (
         idconexion INT IDENTITY(1,1) PRIMARY KEY,
-        nombreconexion VARCHAR(50) NOT NULL UNIQUE,
         gestor VARCHAR(20) NOT NULL CHECK (gestor IN ('SQL Server', 'MySQL')),
         host VARCHAR(100) NOT NULL,
         puerto INT NULL,
         usuario VARCHAR(50) NULL,
         contrasenia VARCHAR(100) NOT NULL,
         basedatos VARCHAR(50) NOT NULL,
+        tabla VARCHAR(50) NOT NULL,
         CONSTRAINT CK_Puerto_Requerido CHECK (
             (gestor = 'SQL Server' AND puerto IS NULL AND host IS NULL) OR 
             (gestor = 'MySQL' AND puerto IS NOT NULL AND host IS NOT NULL)

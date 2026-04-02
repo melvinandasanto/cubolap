@@ -1,110 +1,80 @@
-import os
 import pyodbc
 import mysql.connector
 
 
 class Conectar:
     def __init__(self):
-        self.gestor = "sqlserver"
-        self.host = "localhost"
-        self.instancia = "SQLEXPRESS"
-        self.database = "cubolap"
-        self.user = None
-        self.password = None
-        self.port = None
-        self.trusted_connection = True
-        self.driver = "ODBC Driver 17 for SQL Server"
-        self.timeout = 5
-
         self.conexion = None
         self.cursor = None
         self.ultimo_error = None
 
-    def _hosts_posibles_sqlserver(self):
-        nombre_pc = os.environ.get("COMPUTERNAME", "").strip()
-
-        hosts_base = [self.host, ".", "localhost", "127.0.0.1"]
-        if nombre_pc:
-            hosts_base.append(nombre_pc)
-
-        vistos = set()
-        hosts_base = [h for h in hosts_base if h and not (h in vistos or vistos.add(h))]
-
-        servidores = []
-
-        if self.port:
-            for h in hosts_base:
-                servidores.append(f"{h},{self.port}")
-
-        if self.instancia:
-            for h in hosts_base:
-                servidores.append(f"{h}\\{self.instancia}")
-
-        for h in hosts_base:
-            servidores.append(h)
-
-        vistos = set()
-        servidores = [s for s in servidores if not (s in vistos or vistos.add(s))]
-        return servidores
-
-    def _cadenas_sqlserver(self):
-        cadenas = []
-        for servidor in self._hosts_posibles_sqlserver():
-            cadena = (
-                f"DRIVER={{{self.driver}}};"
-                f"SERVER={servidor};"
-                f"DATABASE={self.database};"
-                f"Connection Timeout={self.timeout};"
-            )
-
-            if self.trusted_connection:
-                cadena += "Trusted_Connection=yes;"
-            else:
-                cadena += f"UID={self.user};PWD={self.password};"
-
-            cadenas.append(cadena)
-
-        return cadenas
-
-    def conectar(self):
-        if self.gestor != "sqlserver":
-            raise ValueError("Solo está configurado SQL Server en esta versión")
-
-        errores = []
-
-        for cadena in self._cadenas_sqlserver():
-            try:
-                self.conexion = pyodbc.connect(cadena)
-                self.cursor = self.conexion.cursor()
-                self.ultimo_error = None
-                return
-            except Exception as e:
-                errores.append(str(e))
-
-        self.ultimo_error = "\n\n".join(errores)
-        raise Exception(f"No se pudo conectar a SQL Server.\n\n{self.ultimo_error}")
-
-    def probar_conexion(self):
+    def conectar(self, gestor, host, database, user=None, password=None, port=None):
         try:
-            self.conectar()
-            return True
+            gestor = (gestor or "").lower().strip()
+
+            if gestor == "mysql":
+                self.conexion = mysql.connector.connect(
+                    host=host,
+                    user=user,
+                    password=password,
+                    database=database,
+                    port=int(port) if port else 3306
+                )
+
+            elif gestor == "sqlserver":
+                server = f"{host},{port}" if port else host
+
+                if user and password:
+                    self.conexion = pyodbc.connect(
+                        "DRIVER={ODBC Driver 17 for SQL Server};"
+                        f"SERVER={server};"
+                        f"DATABASE={database};"
+                        f"UID={user};"
+                        f"PWD={password};"
+                    )
+                else:
+                    self.conexion = pyodbc.connect(
+                        "DRIVER={ODBC Driver 17 for SQL Server};"
+                        f"SERVER={server};"
+                        f"DATABASE={database};"
+                        "Trusted_Connection=yes;"
+                    )
+            else:
+                raise Exception("Gestor no soportado. Use mysql o sqlserver")
+
+            self.cursor = self.conexion.cursor()
+            return self.conexion
+
         except Exception as e:
             self.ultimo_error = str(e)
-            print("Error:", e)
-            return False
-        finally:
-            self.cerrar()
+            print("Error al conectar:", e)
+            raise
 
     def cerrar(self):
-        if self.cursor:
-            self.cursor.close()
-            self.cursor = None
-        if self.conexion:
-            self.conexion.close()
-            self.conexion = None
+        try:
+            if self.cursor:
+                self.cursor.close()
+        except:
+            pass
+
+        try:
+            if self.conexion:
+                self.conexion.close()
+        except:
+            pass
+
+        self.cursor = None
+        self.conexion = None
 
     def ejecutar_sql(self, sql, params=None, uno=False):
-        self.conectar()
+        self.conexion = pyodbc.connect(
+            "DRIVER={ODBC Driver 17 for SQL Server};"
+            "SERVER=localhost\\SQLEXPRESS;"
+            "DATABASE=cubolap;"
+            "Trusted_Connection=yes;"
+        )
+        self.cursor = self.conexion.cursor()
+
         try:
             if params is not None:
                 self.cursor.execute(sql, params)
@@ -121,5 +91,6 @@ class Conectar:
             self.ultimo_error = str(e)
             print("Error al ejecutar SQL:", e)
             return None
+
         finally:
             self.cerrar()

@@ -8,16 +8,15 @@ from PyQt6.QtCore import Qt
 
 # --- IMPORTACIÓN DEL FORMULARIO DE ANÁLISIS ---
 # Asegúrate de que el archivo se llame FromCubo.py y la clase PantallaAnalisisDinamico
-from FromCubo import PantallaAnalisisDinamico
+from formcubo import PantallaAnalisisDinamico
 
 class VistaPreviaDinamica(QMainWindow):
-    def __init__(self, ruta_info="Esperando conexión...", df_origen=None):
+    def __init__(self, tipo_origen, id_origen):
         super().__init__()
+        self.tipo_origen = tipo_origen
+        self.id_origen = id_origen
         self.setWindowTitle("Sistema OLAP - Vista Previa de Datos")
         self.resize(1100, 700)
-        
-        self.ruta_activa = ruta_info
-        self.df_actual = df_origen # Guardamos el dataframe para pasarlo a la siguiente pantalla
 
         self.setStyleSheet("""
             QMainWindow { background-color: #1a2634; }
