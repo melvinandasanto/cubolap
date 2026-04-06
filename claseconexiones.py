@@ -108,17 +108,14 @@ class ClaseConexiones:
              self.contrasenia, self.basedatos, self.tabla, conexion_id)
         )
 
-    def Buscar(self, conexion_id):
+    def Buscar(self, idconexion):
         conexion = Conectar()
-        resultado = conexion.ejecutar_sql(
-            """
-            SELECT idconexion, gestor, host, puerto, usuario, contrasenia, basedatos, tabla
-            FROM CONEXIONES
+        resultado = conexion.ejecutar_sql("""
+            SELECT idconexion, gestor, host, puerto, usuario,
+                   contrasenia, basedatos, tabla
+            FROM conexiones
             WHERE idconexion = ?
-            """,
-            (conexion_id,),
-            uno=True
-        )
+        """, (idconexion,), uno=True)
 
         if resultado:
             self.idconexion = resultado[0]

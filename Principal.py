@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QApplication
-from FormConexiones import FormConexiones
+from formconexiones import FormConexiones
 import formlogin
 
 if __name__ == "__main__":
