@@ -3,7 +3,7 @@ from claseconectar import Conectar
 
 class ClaseConexiones:
     def __init__(self, idconexion=None, gestor=None, host=None, puerto=None,
-                 usuario=None, contrasenia=None, basedatos=None, tabla=None):
+                 usuario=None, contrasenia=None, basedatos=None):
         self.conexion = Conectar()
         self._idconexion = idconexion
         self._gestor = gestor
@@ -12,7 +12,6 @@ class ClaseConexiones:
         self._usuario = usuario
         self._contrasenia = contrasenia
         self._basedatos = basedatos
-        self._tabla = tabla
 
     @property
     def idconexion(self):
@@ -70,23 +69,16 @@ class ClaseConexiones:
     def basedatos(self, value):
         self._basedatos = value
 
-    @property
-    def tabla(self):
-        return self._tabla
-
-    @tabla.setter
-    def tabla(self, value):
-        self._tabla = value
 
     def Guardar(self):
         conexion = Conectar()
         return conexion.ejecutar_sql(
             """
-            INSERT INTO CONEXIONES (gestor, host, puerto, usuario, contrasenia, basedatos, tabla)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO CONEXIONES (gestor, host, puerto, usuario, contrasenia, basedatos)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             (self.gestor, self.host, self.puerto, self.usuario,
-             self.contrasenia, self.basedatos, self.tabla)
+             self.contrasenia, self.basedatos)
         )
 
     def Eliminar(self, conexion_id):
@@ -101,18 +93,18 @@ class ClaseConexiones:
         return conexion.ejecutar_sql(
             """
             UPDATE CONEXIONES
-            SET gestor = ?, host = ?, puerto = ?, usuario = ?, contrasenia = ?, basedatos = ?, tabla = ?
+            SET gestor = ?, host = ?, puerto = ?, usuario = ?, contrasenia = ?, basedatos = ? 
             WHERE idconexion = ?
             """,
             (self.gestor, self.host, self.puerto, self.usuario,
-             self.contrasenia, self.basedatos, self.tabla, conexion_id)
+             self.contrasenia, self.basedatos, conexion_id)
         )
 
     def Buscar(self, idconexion):
         conexion = Conectar()
         resultado = conexion.ejecutar_sql("""
             SELECT idconexion, gestor, host, puerto, usuario,
-                   contrasenia, basedatos, tabla
+                   contrasenia, basedatos
             FROM conexiones
             WHERE idconexion = ?
         """, (idconexion,), uno=True)
@@ -125,7 +117,6 @@ class ClaseConexiones:
             self.usuario = resultado[4]
             self.contrasenia = resultado[5]
             self.basedatos = resultado[6]
-            self.tabla = resultado[7]
             return True
 
         return False
@@ -134,7 +125,7 @@ class ClaseConexiones:
         conexion = Conectar()
         return conexion.ejecutar_sql(
             """
-            SELECT idconexion, gestor, host, puerto, usuario, contrasenia, basedatos, tabla
+            SELECT idconexion, gestor, host, puerto, usuario, contrasenia, basedatos
             FROM CONEXIONES
             ORDER BY idconexion DESC
             """

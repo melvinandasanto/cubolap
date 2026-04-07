@@ -8,9 +8,6 @@ from PyQt6.QtCore import Qt
 
 from formvistacubo import VistaPreviaDinamica
 from claserutas import ClaseRutas
-
-# Ajusta este import al nombre real de tu clase CRUD de conexiones
-# Debe tener al menos Listar()
 from claseconexiones import ClaseConexiones
 
 
@@ -365,7 +362,7 @@ class SeleccionOrigenOLAP(QMainWindow):
             return
 
         try:
-            self.nueva_ventana = VistaPreviaDinamica(
+            self.nueva_ventana = VistaPreviaDinamica( 
                 tipo_origen=self.tipo_origen_actual,
                 id_origen=int(self.id_seleccionado)
             )

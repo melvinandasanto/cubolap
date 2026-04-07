@@ -173,10 +173,6 @@ class AdministradorConexiones(QMainWindow):
         self.txt_db = QLineEdit()
         form_layout.addWidget(self.txt_db)
 
-        form_layout.addWidget(QLabel("Tabla:"))
-        self.txt_tabla = QLineEdit()
-        form_layout.addWidget(self.txt_tabla)
-
         self.lbl_ayuda = QLabel("")
         self.lbl_ayuda.setObjectName("LblAyuda")
         self.lbl_ayuda.setWordWrap(True)
@@ -215,8 +211,8 @@ class AdministradorConexiones(QMainWindow):
             self.txt_user.setPlaceholderText("Obligatorio en MySQL")
             self.txt_pass.setPlaceholderText("Obligatoria en MySQL")
             self.lbl_ayuda.setText(
-                "MySQL: normalmente requiere host, puerto, usuario, contraseña, "
-                "base de datos y tabla."
+                "MySQL: normalmente requiere host, puerto, usuario, contraseña Y "
+                "base de datos"
             )
         else:
             self.txt_puerto.setPlaceholderText("Opcional en SQL Server. Ej: 1433")
@@ -228,7 +224,6 @@ class AdministradorConexiones(QMainWindow):
             )
 
         self.txt_db.setPlaceholderText("Nombre de la base de datos")
-        self.txt_tabla.setPlaceholderText("Tabla a consultar para el cubo")
 
     def validar_campos(self):
         gestor = self.cb_gestor.currentText().lower()
@@ -237,12 +232,11 @@ class AdministradorConexiones(QMainWindow):
         usuario = self.txt_user.text().strip()
         contrasenia = self.txt_pass.text().strip()
         basedatos = self.txt_db.text().strip()
-        tabla = self.txt_tabla.text().strip()
 
-        if not host or not basedatos or not tabla:
+        if not host or not basedatos:
             QMessageBox.warning(
                 self, "Validación",
-                "Host, Base de Datos y Tabla son obligatorios."
+                "Host y Base de Datos son obligatorios."
             )
             return False
 
@@ -263,8 +257,7 @@ class AdministradorConexiones(QMainWindow):
             puerto=self.txt_puerto.text().strip() or None,
             usuario=self.txt_user.text().strip() or None,
             contrasenia=self.txt_pass.text().strip() or None,
-            basedatos=self.txt_db.text().strip(),
-            tabla=self.txt_tabla.text().strip()
+            basedatos=self.txt_db.text().strip()
         )
 
     def limpiar_formulario(self):
@@ -275,7 +268,6 @@ class AdministradorConexiones(QMainWindow):
         self.txt_user.clear()
         self.txt_pass.clear()
         self.txt_db.clear()
-        self.txt_tabla.clear()
         self.actualizar_placeholders()
 
     def probar_conexion_logica(self):
@@ -361,12 +353,11 @@ class AdministradorConexiones(QMainWindow):
             self.table.setRowCount(len(datos))
 
             for fila, registro in enumerate(datos):
-                # registro = idconexion, gestor, host, puerto, usuario, contrasenia, basedatos, tabla
+                # registro = idconexion, gestor, host, puerto, usuario, contrasenia, basedatos
                 self.table.setItem(fila, 0, QTableWidgetItem(str(registro[1] or "")))
                 self.table.setItem(fila, 1, QTableWidgetItem(str(registro[2] or "")))
                 self.table.setItem(fila, 2, QTableWidgetItem(str(registro[3] or "")))
                 self.table.setItem(fila, 3, QTableWidgetItem(str(registro[6] or "")))
-                self.table.setItem(fila, 4, QTableWidgetItem(str(registro[7] or "")))
 
                 # guardar el id oculto en la primera columna
                 self.table.item(fila, 0).setData(Qt.ItemDataRole.UserRole, registro[0])
@@ -396,7 +387,6 @@ class AdministradorConexiones(QMainWindow):
                 self.txt_user.setText(obj.usuario or "")
                 self.txt_pass.setText(obj.contrasenia or "")
                 self.txt_db.setText(obj.basedatos or "")
-                self.txt_tabla.setText(obj.tabla or "")
                 self.actualizar_placeholders()
 
         except Exception as e:

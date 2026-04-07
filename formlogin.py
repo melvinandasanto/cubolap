@@ -56,7 +56,7 @@ class Login:
 
         auth = Autenticacion(
             gestor="sqlserver",
-            host="MARCELAPACHECO\SQLEXPRESS",
+            host="PC1\\SQLEXPRESS",
             database="cubolap"
         )
 

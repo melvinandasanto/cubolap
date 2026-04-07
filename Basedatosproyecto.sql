@@ -27,7 +27,6 @@ CREATE TABLE rol (
         usuario VARCHAR(50) NULL,
         contrasenia VARCHAR(100) NOT NULL,
         basedatos VARCHAR(50) NOT NULL,
-        tabla VARCHAR(50) NOT NULL,
         CONSTRAINT CK_Puerto_Requerido CHECK (
             (gestor = 'SQL Server' AND puerto IS NULL AND host IS NULL) OR 
             (gestor = 'MySQL' AND puerto IS NOT NULL AND host IS NOT NULL)

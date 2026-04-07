@@ -1,16 +1,15 @@
 import sys
-import pandas as pd
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QFrame, QTableWidget, QTableWidgetItem,
-    QHeaderView, QMessageBox, QLineEdit, QComboBox
+    QHeaderView, QMessageBox, QLineEdit, QListWidget, QListWidgetItem
 )
 from PyQt6.QtCore import Qt
 
 from formcubo import PantallaAnalisisDinamico
 from claserutas import ClaseRutas
 from claseconexiones import ClaseConexiones
-from conexionorigen import ConexionOrigen
+from constructormodelodatos import ConstructorModeloDatos
 
 
 class VistaPreviaDinamica(QMainWindow):
@@ -19,20 +18,14 @@ class VistaPreviaDinamica(QMainWindow):
 
         self.tipo_origen = tipo_origen
         self.id_origen = id_origen
-        self.df_actual = pd.DataFrame()
         self.limite_default = 100
 
-        self.gestor = None
-        self.host = None
-        self.puerto = None
-        self.usuario = None
-        self.contrasenia = None
-        self.basedatos = None
-        self.tabla_guardada = None
-        self.ruta_activa = None
+        self.modelo_datos = None
+        self.entidad_actual = None
+        self.datos_cargados = False
 
-        self.setWindowTitle("Sistema OLAP - Vista Previa de Datos")
-        self.resize(1300, 750)
+        self.setWindowTitle("Sistema OLAP - Vista Previa Estructural")
+        self.resize(1450, 800)
 
         self.setStyleSheet("""
             QMainWindow {
@@ -52,7 +45,7 @@ class VistaPreviaDinamica(QMainWindow):
             }
 
             QLabel#LblBanner {
-                font-size: 15px;
+                font-size: 16px;
                 font-weight: bold;
                 color: #3d85c6;
             }
@@ -62,13 +55,23 @@ class VistaPreviaDinamica(QMainWindow):
                 font-size: 13px;
             }
 
-            QLineEdit, QComboBox {
-                background-color: #243447;
-                border: 1px solid #3a4a5e;
+            QLabel#TituloSeccion {
+                font-size: 14px;
+                font-weight: bold;
+                color: #7fb3ff;
+                margin-bottom: 6px;
+            }
+
+            QLineEdit, QListWidget, QTableWidget {
+                background-color: #0d1b2a;
+                border: 1px solid #243447;
+                color: #e0e0e0;
+            }
+
+            QLineEdit {
                 border-radius: 6px;
                 padding: 8px;
-                color: white;
-                min-height: 18px;
+                background-color: #243447;
             }
 
             QPushButton {
@@ -77,8 +80,13 @@ class VistaPreviaDinamica(QMainWindow):
                 padding: 10px 14px;
             }
 
-            QPushButton#BtnCargar {
+            QPushButton#BtnRecargar {
                 background-color: #3d85c6;
+                color: white;
+            }
+
+            QPushButton#BtnCargarDatos {
+                background-color: #f39c12;
                 color: white;
             }
 
@@ -94,11 +102,12 @@ class VistaPreviaDinamica(QMainWindow):
                 min-width: 100px;
             }
 
+            QListWidget {
+                padding: 6px;
+            }
+
             QTableWidget {
-                background-color: #0d1b2a;
-                border: none;
                 gridline-color: #243447;
-                color: #e0e0e0;
                 selection-background-color: #3d85c6;
             }
 
@@ -112,7 +121,7 @@ class VistaPreviaDinamica(QMainWindow):
         """)
 
         self.init_ui()
-        self.cargar_configuracion_inicial()
+        self.cargar_modelo_inicial()
 
     def init_ui(self):
         central_widget = QWidget()
@@ -121,6 +130,9 @@ class VistaPreviaDinamica(QMainWindow):
         main_layout = QVBoxLayout(central_widget)
         main_layout.setContentsMargins(0, 0, 0, 0)
 
+        # =========================
+        # BANNER SUPERIOR
+        # =========================
         self.banner = QFrame()
         self.banner.setObjectName("BannerRuta")
         layout_banner = QVBoxLayout(self.banner)
@@ -128,70 +140,113 @@ class VistaPreviaDinamica(QMainWindow):
         self.lbl_origen = QLabel("ORIGEN DE DATOS: Cargando...")
         self.lbl_origen.setObjectName("LblBanner")
 
-        self.lbl_info = QLabel("Preparando vista previa")
+        self.lbl_info = QLabel("Preparando estructura del origen")
         self.lbl_info.setObjectName("LblSecundario")
 
         layout_banner.addWidget(self.lbl_origen)
         layout_banner.addWidget(self.lbl_info)
+
         main_layout.addWidget(self.banner)
 
-        content_layout = QVBoxLayout()
-        content_layout.setContentsMargins(25, 20, 25, 20)
-        content_layout.setSpacing(15)
+        # =========================
+        # CONTROLES SUPERIORES
+        # =========================
+        controles = QHBoxLayout()
+        controles.setContentsMargins(20, 15, 20, 5)
+        controles.setSpacing(10)
 
-        lbl_msg = QLabel("Vista previa de la estructura de datos seleccionada:")
-        lbl_msg.setStyleSheet("color: #a0aeba;")
-        content_layout.addWidget(lbl_msg)
-
-        controles_layout = QHBoxLayout()
-        controles_layout.setSpacing(10)
-
-        self.lbl_filas = QLabel("Filas a visualizar:")
-        controles_layout.addWidget(self.lbl_filas)
+        controles.addWidget(QLabel("Filas de vista previa:"))
 
         self.txt_limite = QLineEdit()
-        self.txt_limite.setPlaceholderText("Ejemplo: 100")
         self.txt_limite.setText(str(self.limite_default))
         self.txt_limite.setFixedWidth(120)
-        controles_layout.addWidget(self.txt_limite)
+        controles.addWidget(self.txt_limite)
 
-        self.lbl_tabla = QLabel("Tabla:")
-        controles_layout.addWidget(self.lbl_tabla)
+        self.btn_recargar = QPushButton("Recargar estructura")
+        self.btn_recargar.setObjectName("BtnRecargar")
+        self.btn_recargar.clicked.connect(self.cargar_modelo_inicial)
+        controles.addWidget(self.btn_recargar)
 
-        self.combo_tablas = QComboBox()
-        self.combo_tablas.setMinimumWidth(250)
-        controles_layout.addWidget(self.combo_tablas)
+        self.btn_cargar_datos = QPushButton("Cargar datos")
+        self.btn_cargar_datos.setObjectName("BtnCargarDatos")
+        self.btn_cargar_datos.clicked.connect(self.cargar_datos_completos)
+        controles.addWidget(self.btn_cargar_datos)
 
-        self.btn_cargar = QPushButton("Cargar vista previa")
-        self.btn_cargar.setObjectName("BtnCargar")
-        self.btn_cargar.clicked.connect(self.recargar_vista_previa)
-        controles_layout.addWidget(self.btn_cargar)
+        controles.addStretch()
+        main_layout.addLayout(controles)
 
-        controles_layout.addStretch()
-        content_layout.addLayout(controles_layout)
+        # =========================
+        # PANEL CENTRAL
+        # =========================
+        paneles = QHBoxLayout()
+        paneles.setContentsMargins(20, 10, 20, 10)
+        paneles.setSpacing(15)
 
-        self.tabla = QTableWidget()
-        self.tabla.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
-        self.tabla.horizontalHeader().setStretchLastSection(True)
-        content_layout.addWidget(self.tabla)
+        # ----- Panel entidades -----
+        panel_entidades = QVBoxLayout()
+        lbl_entidades = QLabel("Entidades")
+        lbl_entidades.setObjectName("TituloSeccion")
+        panel_entidades.addWidget(lbl_entidades)
 
+        self.lista_entidades = QListWidget()
+        self.lista_entidades.itemSelectionChanged.connect(self.cambiar_entidad)
+        panel_entidades.addWidget(self.lista_entidades)
+
+        paneles.addLayout(panel_entidades, 2)
+
+        # ----- Panel columnas -----
+        panel_columnas = QVBoxLayout()
+        lbl_columnas = QLabel("Columnas")
+        lbl_columnas.setObjectName("TituloSeccion")
+        panel_columnas.addWidget(lbl_columnas)
+
+        self.tabla_columnas = QTableWidget()
+        self.tabla_columnas.setColumnCount(4)
+        self.tabla_columnas.setHorizontalHeaderLabels(["Nombre", "Tipo", "Nulo", "Longitud"])
+        self.tabla_columnas.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        panel_columnas.addWidget(self.tabla_columnas)
+
+        paneles.addLayout(panel_columnas, 3)
+
+        main_layout.addLayout(paneles, 3)
+
+        # =========================
+        # PREVIEW
+        # =========================
+        preview_layout = QVBoxLayout()
+        preview_layout.setContentsMargins(20, 0, 20, 10)
+
+        lbl_preview = QLabel("Vista previa de datos")
+        lbl_preview.setObjectName("TituloSeccion")
+        preview_layout.addWidget(lbl_preview)
+
+        self.tabla_preview = QTableWidget()
+        self.tabla_preview.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        self.tabla_preview.horizontalHeader().setStretchLastSection(True)
+        preview_layout.addWidget(self.tabla_preview)
+
+        main_layout.addLayout(preview_layout, 4)
+
+        # =========================
+        # BOTONES INFERIORES
+        # =========================
         btn_layout = QHBoxLayout()
-        btn_layout.setContentsMargins(0, 15, 0, 10)
+        btn_layout.setContentsMargins(20, 10, 20, 15)
 
         self.btn_salir = QPushButton("Salir")
         self.btn_salir.setObjectName("BtnSalir")
         self.btn_salir.clicked.connect(self.close)
 
-        self.btn_analizar = QPushButton("Analizar mis Datos")
+        self.btn_analizar = QPushButton("Ir al Cubo")
         self.btn_analizar.setObjectName("BtnAnalizar")
+        self.btn_analizar.setEnabled(False)
         self.btn_analizar.clicked.connect(self.abrir_analisis)
 
         btn_layout.addWidget(self.btn_salir)
         btn_layout.addStretch()
         btn_layout.addWidget(self.btn_analizar)
 
-        content_layout.addLayout(btn_layout)
-        main_layout.addLayout(content_layout)
+        main_layout.addLayout(btn_layout)
 
     def obtener_limite(self):
         texto = self.txt_limite.text().strip()
@@ -208,166 +263,223 @@ class VistaPreviaDinamica(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Aviso",
-                f"El número de filas debe ser un entero mayor que 0. Se usará {self.limite_default}."
+                f"El número de filas debe ser mayor que 0. Se usará {self.limite_default}."
             )
             self.txt_limite.setText(str(self.limite_default))
             return self.limite_default
 
-    def cargar_configuracion_inicial(self):
+    def cargar_modelo_inicial(self):
         try:
-            if self.tipo_origen == "ruta":
-                self.configurar_modo_ruta()
-            elif self.tipo_origen == "conexion":
-                self.configurar_modo_conexion()
+            limite = self.obtener_limite()
+            constructor = ConstructorModeloDatos()
+
+            if self.tipo_origen == "conexion":
+                obj_conexion = ClaseConexiones()
+                encontrado = obj_conexion.Buscar(self.id_origen)
+
+                if not encontrado:
+                    raise Exception("No se encontró la conexión seleccionada")
+
+                self.modelo_datos = constructor.construir_desde_conexion(
+                    gestor=obj_conexion.gestor,
+                    host=obj_conexion.host,
+                    database=obj_conexion.basedatos,
+                    user=obj_conexion.usuario,
+                    password=obj_conexion.contrasenia,
+                    port=obj_conexion.puerto,
+                    limite_preview=limite,
+                    cargar_completa=False
+                )
+
+            elif self.tipo_origen == "ruta":
+                obj_ruta = ClaseRutas()
+                encontrado = obj_ruta.Buscar(self.id_origen)
+
+                if not encontrado:
+                    raise Exception("No se encontró la ruta seleccionada")
+
+                self.modelo_datos = constructor.construir_desde_ruta(
+                    ruta_archivo=obj_ruta.nombre_ruta,
+                    limite_preview=limite,
+                    cargar_completa=False
+                )
             else:
                 raise Exception("Tipo de origen no válido")
+
+            self.datos_cargados = False
+            self.btn_analizar.setEnabled(False)
+
+            self.actualizar_encabezado()
+            self.cargar_lista_entidades()
+
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
 
-    def configurar_modo_ruta(self):
-        self.lbl_tabla.hide()
-        self.combo_tablas.hide()
-
-        clase_ruta = ClaseRutas()
-        encontrado = clase_ruta.Buscar(self.id_origen)
-
-        if not encontrado:
-            raise Exception("No se encontró la ruta seleccionada")
-
-        self.ruta_activa = clase_ruta.nombre_ruta
-
-        self.lbl_origen.setText("ORIGEN DE DATOS: Ruta")
-        self.lbl_info.setText(self.ruta_activa)
-
-        self.cargar_desde_ruta()
-
-    def configurar_modo_conexion(self):
-        obj_conexion = ClaseConexiones()
-        encontrado = obj_conexion.Buscar(self.id_origen)
-
-        if not encontrado:
-            raise Exception("No se encontró la conexión seleccionada")
-
-        self.gestor = obj_conexion.gestor
-        self.host = obj_conexion.host
-        self.puerto = obj_conexion.puerto
-        self.usuario = obj_conexion.usuario
-        self.contrasenia = obj_conexion.contrasenia
-        self.basedatos = obj_conexion.basedatos
-        self.tabla_guardada = obj_conexion.tabla
-
-        self.lbl_origen.setText(f"ORIGEN DE DATOS: {self.gestor} - {self.basedatos}")
-
-        if self.tabla_guardada is not None and str(self.tabla_guardada).strip() != "":
-            self.lbl_info.setText(f"Host: {self.host} | Tabla guardada: {self.tabla_guardada}")
-            self.lbl_tabla.hide()
-            self.combo_tablas.hide()
-        else:
-            self.lbl_info.setText(f"Host: {self.host} | Seleccione una tabla")
-            self.lbl_tabla.show()
-            self.combo_tablas.show()
-            self.cargar_tablas_conexion()
-
-        self.recargar_vista_previa()
-
-    def crear_conexion_externa(self):
-        return ConexionOrigen(
-            gestor=self.gestor,
-            host=self.host,
-            database=self.basedatos,
-            user=self.usuario,
-            password=self.contrasenia,
-            port=self.puerto
-        )
-
-    def cargar_tablas_conexion(self):
-        conexion = self.crear_conexion_externa()
-        tablas = conexion.obtener_tablas()
-
-        self.combo_tablas.clear()
-
-        if not tablas:
-            raise Exception("No se encontraron tablas en la base de datos")
-
-        self.combo_tablas.addItems(tablas)
-
-    def recargar_vista_previa(self):
+    def cargar_datos_completos(self):
         try:
-            if self.tipo_origen == "ruta":
-                self.cargar_desde_ruta()
+            limite = self.obtener_limite()
+            constructor = ConstructorModeloDatos()
+
+            if self.tipo_origen == "conexion":
+                obj_conexion = ClaseConexiones()
+                encontrado = obj_conexion.Buscar(self.id_origen)
+
+                if not encontrado:
+                    raise Exception("No se encontró la conexión seleccionada")
+
+                self.modelo_datos = constructor.construir_desde_conexion(
+                    gestor=obj_conexion.gestor,
+                    host=obj_conexion.host,
+                    database=obj_conexion.basedatos,
+                    user=obj_conexion.usuario,
+                    password=obj_conexion.contrasenia,
+                    port=obj_conexion.puerto,
+                    limite_preview=limite,
+                    cargar_completa=True
+                )
+
+            elif self.tipo_origen == "ruta":
+                obj_ruta = ClaseRutas()
+                encontrado = obj_ruta.Buscar(self.id_origen)
+
+                if not encontrado:
+                    raise Exception("No se encontró la ruta seleccionada")
+
+                self.modelo_datos = constructor.construir_desde_ruta(
+                    ruta_archivo=obj_ruta.nombre_ruta,
+                    limite_preview=limite,
+                    cargar_completa=True
+                )
             else:
-                self.cargar_desde_conexion()
+                raise Exception("Tipo de origen no válido")
+
+            self.datos_cargados = True
+            self.btn_analizar.setEnabled(True)
+
+            self.actualizar_encabezado()
+            self.cargar_lista_entidades()
+
+            total_entidades = len(self.modelo_datos["entidades"])
+
+            # Verificación rápida en terminal
+            for nombre, entidad in self.modelo_datos["entidades"].items():
+                df = entidad.get("dataframe")
+                print(nombre, "->", "CARGADO" if df is not None else "VACÍO")
+
+            QMessageBox.information(
+                self,
+                "Carga completada",
+                f"Los datos se cargaron correctamente.\n\nEntidades cargadas: {total_entidades}"
+            )
+
         except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
+            self.datos_cargados = False
+            self.btn_analizar.setEnabled(False)
+            QMessageBox.critical(
+                self,
+                "Error",
+                f"No se pudieron cargar los datos completos.\n\n{str(e)}"
+            )
 
-    def cargar_desde_ruta(self):
-        limite = self.obtener_limite()
-
-        clase_ruta = ClaseRutas()
-        encontrado = clase_ruta.Buscar(self.id_origen)
-
-        if not encontrado:
-            raise Exception("No se encontró la ruta seleccionada")
-
-        ok, resultado = clase_ruta.cargar_datos(clase_ruta.nombre_ruta)
-
-        if not ok:
-            raise Exception(f"No se pudo cargar el archivo.\n\n{resultado}")
-
-        df = resultado.head(limite).copy()
-        self.df_actual = df
-
-        self.lbl_info.setText(f"{clase_ruta.nombre_ruta} | Mostrando {len(df)} filas")
-        self.mostrar_dataframe(df)
-
-    def cargar_desde_conexion(self):
-        limite = self.obtener_limite()
-
-        if self.tabla_guardada is not None and str(self.tabla_guardada).strip() != "":
-            tabla_usar = self.tabla_guardada
-        else:
-            tabla_usar = self.combo_tablas.currentText().strip()
-
-        if not tabla_usar:
-            raise Exception("Debe seleccionar una tabla")
-
-        conexion = self.crear_conexion_externa()
-        df = conexion.cargar_tabla(tabla_usar, limite=limite)
-
-        self.df_actual = df
-        self.lbl_info.setText(
-            f"Host: {self.host} | Tabla: {tabla_usar} | Mostrando {len(df)} filas"
-        )
-        self.mostrar_dataframe(df)
-
-    def mostrar_dataframe(self, dataframe):
-        if dataframe is None or dataframe.empty:
-            self.tabla.clear()
-            self.tabla.setRowCount(0)
-            self.tabla.setColumnCount(0)
-            QMessageBox.warning(self, "Aviso", "No hay datos para mostrar.")
+    def actualizar_encabezado(self):
+        if not self.modelo_datos:
             return
 
-        columnas = [str(col) for col in dataframe.columns]
+        self.lbl_origen.setText(
+            f"ORIGEN DE DATOS: {self.modelo_datos['nombre_origen']}"
+        )
 
-        self.tabla.clear()
-        self.tabla.setColumnCount(len(columnas))
-        self.tabla.setHorizontalHeaderLabels(columnas)
-        self.tabla.setRowCount(len(dataframe))
+        total_entidades = len(self.modelo_datos["entidades"])
+        total_relaciones = len(self.modelo_datos["relaciones"])
+        estado = "Datos completos cargados" if self.datos_cargados else "Solo estructura cargada"
+
+        self.lbl_info.setText(
+            f"Tipo: {self.modelo_datos['tipo_origen']} | "
+            f"Entidades: {total_entidades} | "
+            f"Relaciones detectadas: {total_relaciones} | "
+            f"Estado: {estado}"
+        )
+
+    def cargar_lista_entidades(self):
+        self.lista_entidades.clear()
+        self.tabla_columnas.clearContents()
+        self.tabla_columnas.setRowCount(0)
+        self.tabla_preview.clear()
+        self.tabla_preview.setRowCount(0)
+        self.tabla_preview.setColumnCount(0)
+        self.entidad_actual = None
+
+        if not self.modelo_datos or not self.modelo_datos["entidades"]:
+            return
+
+        for nombre, entidad in self.modelo_datos["entidades"].items():
+            texto = f"{nombre}  |  {entidad['filas']} filas  |  {len(entidad['columnas'])} columnas"
+            item = QListWidgetItem(texto)
+            item.setData(Qt.ItemDataRole.UserRole, nombre)
+            self.lista_entidades.addItem(item)
+
+        if self.lista_entidades.count() > 0:
+            self.lista_entidades.setCurrentRow(0)
+
+    def cambiar_entidad(self):
+        items = self.lista_entidades.selectedItems()
+        if not items or not self.modelo_datos:
+            return
+
+        nombre_entidad = items[0].data(Qt.ItemDataRole.UserRole)
+        self.entidad_actual = self.modelo_datos["entidades"][nombre_entidad]
+
+        self.mostrar_columnas(self.entidad_actual["columnas"])
+        self.mostrar_preview(self.entidad_actual["preview"])
+
+    def mostrar_columnas(self, columnas):
+        self.tabla_columnas.clearContents()
+        self.tabla_columnas.setRowCount(len(columnas))
+
+        for i, col in enumerate(columnas):
+            self.tabla_columnas.setItem(i, 0, QTableWidgetItem(str(col.get("nombre", ""))))
+            self.tabla_columnas.setItem(i, 1, QTableWidgetItem(str(col.get("tipo", ""))))
+            self.tabla_columnas.setItem(i, 2, QTableWidgetItem("Sí" if col.get("nulo", False) else "No"))
+            self.tabla_columnas.setItem(
+                i,
+                3,
+                QTableWidgetItem("" if col.get("longitud") is None else str(col.get("longitud")))
+            )
+
+    def mostrar_preview(self, dataframe):
+        if dataframe is None or dataframe.empty:
+            self.tabla_preview.clear()
+            self.tabla_preview.setRowCount(0)
+            self.tabla_preview.setColumnCount(0)
+            return
+
+        columnas = [str(c) for c in dataframe.columns]
+
+        self.tabla_preview.clear()
+        self.tabla_preview.setColumnCount(len(columnas))
+        self.tabla_preview.setHorizontalHeaderLabels(columnas)
+        self.tabla_preview.setRowCount(len(dataframe))
 
         for i in range(len(dataframe)):
             for j in range(len(columnas)):
-                valor = str(dataframe.iloc[i, j])
-                self.tabla.setItem(i, j, QTableWidgetItem(valor))
+                self.tabla_preview.setItem(i, j, QTableWidgetItem(str(dataframe.iloc[i, j])))
 
-        self.tabla.resizeColumnsToContents()
+        self.tabla_preview.resizeColumnsToContents()
 
     def abrir_analisis(self):
-        if self.df_actual is None or self.df_actual.empty:
-            QMessageBox.warning(self, "Aviso", "No hay datos cargados para analizar.")
+        if not self.modelo_datos or not self.modelo_datos["entidades"]:
+            QMessageBox.warning(self, "Aviso", "No hay modelo cargado para analizar.")
             return
 
-        self.ventana_analisis = PantallaAnalisisDinamico(self.df_actual)
+        if not self.datos_cargados:
+            QMessageBox.warning(
+                self,
+                "Aviso",
+                "Primero debe cargar los datos antes de ir al cubo."
+            )
+            return
+
+        self.ventana_analisis = PantallaAnalisisDinamico(self.modelo_datos)
         self.ventana_analisis.show()
         self.close()
 
