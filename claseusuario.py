@@ -92,12 +92,17 @@ class Usuario:
         return conexion.ejecutar_sql("""
             SELECT u.idusuario, u.nombre, r.idrol, r.nombrerol, u.activo
             FROM usuario u
-            INNER JOIN rol r ON u.idrol = r.idrol
+            LEFT JOIN rol r ON u.idrol = r.idrol
             ORDER BY u.idusuario
         """)
 
-    def ListarRoles(self):
+    def ObtenerNombreRol(self, idrol):
         conexion = claseconectar.Conectar()
-        return conexion.ejecutar_sql(
-            "SELECT idrol, nombrerol FROM rol ORDER BY nombrerol"
+        resultado = conexion.ejecutar_sql(
+            "SELECT nombrerol FROM rol WHERE idrol = ?",
+            (idrol,),
+            uno=True
         )
+        if resultado:
+            return resultado[0]
+        return "Sin rol"
