@@ -1,5 +1,6 @@
 import sys
 import os
+import numpy as np
 
 # Compatibilidad con PyQt6 para Matplotlib
 os.environ["QT_API"] = "pyqt6"
@@ -152,6 +153,14 @@ class PantallaAnalisisDinamico(QMainWindow):
         self.combo_filtro_campo = QComboBox()
         self.combo_filtro_campo.currentIndexChanged.connect(self.actualizar_valores_filtro)
         ly_config.addWidget(self.combo_filtro_campo)
+        ly_config.addSpacing(12)
+
+        ly_config.addWidget(QLabel("FILTRO 2 (OPCIONAL):"))
+        self.combo_filtro_campo_2 = QComboBox()
+        self.combo_filtro_campo_2.currentIndexChanged.connect(self.actualizar_valores_filtro_2)
+        ly_config.addWidget(self.combo_filtro_campo_2)
+
+    
 
         ly_config.addSpacing(12)
 
@@ -160,6 +169,13 @@ class PantallaAnalisisDinamico(QMainWindow):
         ly_config.addWidget(self.combo_filtro_valor)
 
         ly_config.addSpacing(20)
+
+        
+        
+
+        ly_config.addWidget(QLabel("VALOR FILTRO 2:"))
+        self.combo_filtro_valor_2 = QComboBox()
+        ly_config.addWidget(self.combo_filtro_valor_2)
 
         self.lbl_estado = QLabel("Configure hechos, dimensiones, valor, agregación y filtro.")
         self.lbl_estado.setStyleSheet("color: #a0aeba; font-size: 12px;")
@@ -394,6 +410,12 @@ class PantallaAnalisisDinamico(QMainWindow):
         for campo in campos_disponibles:
             self.combo_filtro_campo.addItem(campo)
 
+        self.combo_filtro_campo_2.clear()
+        self.combo_filtro_campo_2.addItem("(Ninguno)")
+
+        for campo in campos_disponibles:
+            self.combo_filtro_campo_2.addItem(campo)
+
     def actualizar_valores_filtro(self):
         self.combo_filtro_valor.clear()
 
@@ -426,21 +448,61 @@ class PantallaAnalisisDinamico(QMainWindow):
         except Exception:
             self.combo_filtro_valor.addItem("(Todos)")
 
-    def aplicar_filtro(self, df):
-        campo_filtro = self.combo_filtro_campo.currentText().strip()
-        valor_filtro = self.combo_filtro_valor.currentText().strip()
+    def actualizar_valores_filtro_2(self):
+        self.combo_filtro_valor_2.clear()
+
+        campo_filtro = self.combo_filtro_campo_2.currentText().strip()
 
         if not campo_filtro or campo_filtro == "(Ninguno)":
-            return df
+            self.combo_filtro_valor_2.addItem("(Todos)")
+            return
 
-        if not valor_filtro or valor_filtro == "(Todos)":
-            return df
+        try:
+            df_temp = self.construir_dataframe_analisis()
+            if campo_filtro not in df_temp.columns:
+                self.combo_filtro_valor_2.addItem("(Todos)")
+                return
 
-        if campo_filtro not in df.columns:
-            return df
+            self.combo_filtro_valor_2.addItem("(Todos)")
 
-        return df[df[campo_filtro].astype(str) == valor_filtro].copy()
+            valores = (
+                df_temp[campo_filtro]
+                .dropna()
+                .astype(str)
+                .sort_values()
+                .unique()
+                .tolist()
+            )
 
+            for valor in valores:
+                self.combo_filtro_valor_2.addItem(valor)
+
+        except Exception:
+            self.combo_filtro_valor_2.addItem("(Todos)")
+
+    def aplicar_filtros(self, df):
+        filtros = []
+
+        # filtro 1
+        campo1 = self.combo_filtro_campo.currentText().strip()
+        valor1 = self.combo_filtro_valor.currentText().strip()
+
+        if campo1 and campo1 != "(Ninguno)" and valor1 and valor1 != "(Todos)":
+            filtros.append((campo1, valor1))
+
+        # filtro 2
+        campo2 = self.combo_filtro_campo_2.currentText().strip()
+        valor2 = self.combo_filtro_valor_2.currentText().strip()
+
+        if campo2 and campo2 != "(Ninguno)" and valor2 and valor2 != "(Todos)":
+            filtros.append((campo2, valor2))
+
+        # aplicar todos
+        for campo, valor in filtros:
+            if campo in df.columns:
+                df = df[df[campo].astype(str) == valor]
+
+        return df
     # =========================================================
     # MERGES
     # =========================================================
@@ -562,7 +624,19 @@ class PantallaAnalisisDinamico(QMainWindow):
             else:
                 cols_finales.append(col)
         df.columns = cols_finales
+    
 
+    # ejemplo de medidas calculadas
+        if f"{self.entidad_hechos_actual}.monto" in df.columns:
+            col_monto = f"{self.entidad_hechos_actual}.monto"
+
+        df[f"{self.entidad_hechos_actual}.utilidad"] = np.subtract(df[col_monto], 20)
+
+        df[f"{self.entidad_hechos_actual}.margen"] = np.divide(
+        df[f"{self.entidad_hechos_actual}.utilidad"],
+        df[col_monto],
+        where=df[col_monto] != 0
+    )
         return df
 
     # =========================================================
@@ -606,7 +680,7 @@ class PantallaAnalisisDinamico(QMainWindow):
 
         try:
             self.df_analisis = self.construir_dataframe_analisis()
-            self.df_analisis = self.aplicar_filtro(self.df_analisis)
+            self.df_analisis = self.aplicar_filtros(self.df_analisis)
 
             valor_real = valor if "." in valor else f"{self.entidad_hechos_actual}.{valor}"
             if valor_real not in self.df_analisis.columns and valor in self.df_analisis.columns:
@@ -628,7 +702,9 @@ class PantallaAnalisisDinamico(QMainWindow):
                     columns=campo_columnas,
                     values=valor_real,
                     aggfunc=aggfunc,
-                    fill_value=0
+                    fill_value=0,
+                    margins=True,
+                    margins_name="Total"
                 )
                 self.mostrar_pivot_completa(resumen)
                 self.regenerar_graficos_desde_pivot(resumen, campo_filas, valor_real, aggfunc)
@@ -668,7 +744,7 @@ class PantallaAnalisisDinamico(QMainWindow):
         self.tabla_resumen.setRowCount(filas)
         self.tabla_resumen.setColumnCount(columnas)
 
-        encabezados = [str(pivot_df.index.name)] + [str(c) for c in pivot_df.columns]
+        encabezados = [str(pivot_df.index.name)] + [f"{col}" for col in pivot_df.columns]
         self.tabla_resumen.setHorizontalHeaderLabels(encabezados)
 
         for i in range(filas):
@@ -688,7 +764,7 @@ class PantallaAnalisisDinamico(QMainWindow):
         f1 = QHBoxLayout()
         f2 = QHBoxLayout()
 
-        f1.addWidget(self.crear_canvas_simple(f"Comparativo de {valor_real}", "bar", campo_filas, valor_real, aggfunc))
+        f1.addWidget(self.crear_canvas_simple(f"{aggfunc.upper()} de {valor_real}", "bar", campo_filas, valor_real, aggfunc))
         f1.addWidget(self.crear_canvas_simple("Distribución %", "pie", campo_filas, valor_real, aggfunc))
         f2.addWidget(self.crear_canvas_simple("Evolución", "line", campo_filas, valor_real, aggfunc))
         f2.addWidget(self.crear_canvas_simple("Análisis de Puntos", "scatter", campo_filas, valor_real, aggfunc))
@@ -699,18 +775,30 @@ class PantallaAnalisisDinamico(QMainWindow):
     def regenerar_graficos_desde_pivot(self, pivot_df, campo_filas, valor_real, aggfunc):
         self.limpiar_layout(self.layout_grid)
 
-        serie = pivot_df.sum(axis=1)
-
         f1 = QHBoxLayout()
-        f2 = QHBoxLayout()
 
-        f1.addWidget(self.crear_canvas_serie(f"Comparativo de {valor_real}", "bar", serie, campo_filas, valor_real))
-        f1.addWidget(self.crear_canvas_serie("Distribución %", "pie", serie, campo_filas, valor_real))
-        f2.addWidget(self.crear_canvas_serie("Evolución", "line", serie, campo_filas, valor_real))
-        f2.addWidget(self.crear_canvas_serie("Análisis de Puntos", "scatter", serie, campo_filas, valor_real))
+        card = QFrame()
+        card.setObjectName("GraficoCard")
+        ly = QVBoxLayout(card)
+        ly.addWidget(QLabel(f"{aggfunc.upper()} de {valor_real}"))
 
+        fig, ax = plt.subplots(figsize=(6, 4), dpi=85)
+
+        try:
+            pivot_df.plot(kind="bar", ax=ax)
+            ax.set_xlabel(campo_filas)
+            ax.set_ylabel(valor_real)
+            ax.legend(title="Columnas")
+
+        except Exception:
+            ax.text(0.5, 0.5, "No se pudo generar", ha='center', va='center')
+            ax.set_axis_off()
+
+        plt.tight_layout()
+        ly.addWidget(FigureCanvas(fig))
+
+        f1.addWidget(card)
         self.layout_grid.addLayout(f1)
-        self.layout_grid.addLayout(f2)
 
     def limpiar_layout(self, layout):
         while layout.count():
@@ -746,12 +834,12 @@ class PantallaAnalisisDinamico(QMainWindow):
             if tipo == "bar":
                 serie.plot(kind='bar', ax=ax, color='#3d85c6')
                 ax.set_xlabel(eje_x)
-                ax.set_ylabel(eje_y)
+                ax.set_ylabel(f"{eje_y}")
 
             elif tipo == "line":
                 serie.plot(kind='line', ax=ax, marker='o', color='#2ecc71')
                 ax.set_xlabel(eje_x)
-                ax.set_ylabel(eje_y)
+                ax.set_ylabel(f"{eje_y}")
 
             elif tipo == "pie":
                 if len(serie) > 0:
@@ -761,7 +849,7 @@ class PantallaAnalisisDinamico(QMainWindow):
             elif tipo == "scatter":
                 ax.scatter(range(len(serie)), serie.values, color='#e67e22')
                 ax.set_xlabel(eje_x)
-                ax.set_ylabel(eje_y)
+                ax.set_ylabel(f"{eje_y}")
                 ax.set_xticks(range(len(serie)))
                 ax.set_xticklabels([str(i) for i in serie.index], rotation=45, ha="right")
 
