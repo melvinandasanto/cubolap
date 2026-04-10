@@ -191,13 +191,13 @@ class PantallaAnalisisDinamico(QMainWindow):
         ly_panel.addWidget(QLabel("FILTRO 1 (OPCIONAL):"))
         self.combo_filtro_campo = QComboBox()
         self.combo_filtro_campo.currentIndexChanged.connect(self.actualizar_valores_filtro)
-        ly_config.addWidget(self.combo_filtro_campo)
+        ly_panel.addWidget(self.combo_filtro_campo)
 
         ly_panel.addWidget(QLabel("VALOR DEL FILTRO:"))
         self.combo_filtro_valor = QComboBox()
         ly_panel.addWidget(self.combo_filtro_valor)
 
-        ly_config.addSpacing(20)
+        ly_panel.addSpacing(20)
 
         self.lbl_estado = QLabel("Configure hechos, dimensiones, valor, agregación y filtro.")
         self.lbl_estado.setStyleSheet("color: #a0aeba; font-size: 12px;")
@@ -472,12 +472,6 @@ class PantallaAnalisisDinamico(QMainWindow):
         for campo in campos_disponibles:
             self.combo_filtro_campo.addItem(campo)
 
-        self.combo_filtro_campo_2.clear()
-        self.combo_filtro_campo_2.addItem("(Ninguno)")
-
-        for campo in campos_disponibles:
-            self.combo_filtro_campo_2.addItem(campo)
-
     def actualizar_valores_filtro(self):
         self.combo_filtro_valor.clear()
 
@@ -551,13 +545,6 @@ class PantallaAnalisisDinamico(QMainWindow):
 
         if campo1 and campo1 != "(Ninguno)" and valor1 and valor1 != "(Todos)":
             filtros.append((campo1, valor1))
-
-        # filtro 2
-        campo2 = self.combo_filtro_campo_2.currentText().strip()
-        valor2 = self.combo_filtro_valor_2.currentText().strip()
-
-        if campo2 and campo2 != "(Ninguno)" and valor2 and valor2 != "(Todos)":
-            filtros.append((campo2, valor2))
 
         # aplicar todos
         for campo, valor in filtros:
