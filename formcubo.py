@@ -10,10 +10,42 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QFrame, QScrollArea, QComboBox, QMessageBox,
-    QTableWidget, QTableWidgetItem, QHeaderView
+    QTableWidget, QTableWidgetItem, QHeaderView, QDialog, QSizePolicy
 )
 from PyQt6.QtCore import Qt
 
+#clase para la ventana de grficos 
+class VentanaGrafico(QDialog):
+    def __init__(self, titulo, tipo, serie, eje_x, eje_y, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(titulo)
+        self.resize(900, 650)
+        self.setModal(True)
+        self.setStyleSheet("background-color: #0d1b2a; color: white;")
+        
+        layout = QVBoxLayout(self)
+
+        # Configuración de estilo para el gráfico
+        fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
+        plt.rcParams.update({"text.color": "white", "axes.labelcolor": "white"})
+        
+        # Lógica de dibujo según el tipo
+        if tipo == "bar": serie.plot(kind='bar', ax=ax, color='#3d85c6')
+        elif tipo == "line": serie.plot(kind='line', ax=ax, marker='o', color='#2ecc71')
+        elif tipo == "pie": serie.plot(kind='pie', ax=ax, autopct='%1.1f%%')
+        elif tipo == "scatter": ax.scatter(range(len(serie)), serie.values, color='#e67e22')
+
+        canvas = FigureCanvas(fig)
+        layout.addWidget(canvas)
+
+        # EL BOTÓN DE REGRESO
+        self.btn_regresar = QPushButton("Salir")
+        self.btn_regresar.setFixedHeight(30)
+        self.btn_regresar.setStyleSheet("background-color: #c63d3d; color: white; font-weight: bold; border-radius: 8px;")
+        self.btn_regresar.clicked.connect(self.close)
+        layout.addWidget(self.btn_regresar)
+
+#fin de la clase de la ventana de grficos
 
 class PantallaAnalisisDinamico(QMainWindow):
     def __init__(self, modelo_datos=None):
@@ -22,62 +54,75 @@ class PantallaAnalisisDinamico(QMainWindow):
         self.resize(1400, 900)
 
         self.modelo_datos = modelo_datos
-
         self.df_hechos = None
         self.df_analisis = None
-
         self.entidad_hechos_actual = None
         self.entidad_dim1_actual = None
         self.entidad_dim2_actual = None
-
         self.relacion_dim1 = None
         self.relacion_dim2 = None
+        
+        # Esta variable es vital para que los gráficos funcionen
+        self.resumen_actual_grafico = None 
 
         self.setStyleSheet("""
             QMainWindow { background-color: #0d1b2a; }
             QWidget { color: white; font-family: 'Segoe UI'; }
-
-            QFrame#PanelControl {
-                background-color: #1b263b; border-right: 2px solid #3d85c6;
+            QFrame#PanelControl { background-color: #1b263b; border-right: 2px solid #3d85c6; }
+            QLabel#TituloSeccion { font-weight: bold; color: #3d85c6; font-size: 14px; text-transform: uppercase; margin-bottom: 5px; }
+            QTableWidget#TablaPivot { background-color: #1b263b; border: 1px solid #3d85c6; gridline-color: #243447; color: #ffffff; border-radius: 8px; }
+            QHeaderView::section { background-color: #243447; color: #3d85c6; font-weight: bold; border: 1px solid #0d1b2a; }
+            QFrame#GraficoCard { background-color: #1b263b; border-radius: 12px; border: 1px solid #243447; }
+            QComboBox { background-color: #415a77; border: 1px solid #3d85c6; border-radius: 5px; padding: 8px; color: white; }
+            QPushButton#BtnAplicar { background-color: #2ecc71; color: white; font-weight: bold; padding: 15px; border-radius: 5px; }
+            QPushButton#BtnSalir { background-color: #c63d3d; font-weight: bold; padding: 10px; border-radius: 5px; }
+            
+            /* Estilo para los botones de gráficos */
+            QPushButton#BtnGrafico { 
+                background-color: #1b263b; color: #3d85c6; font-weight: bold; 
+                padding: 15px; border: 2px solid #3d85c6; border-radius: 10px; 
             }
+            QPushButton#BtnGrafico:hover { background-color: #3d85c6; color: white; }
 
-            QLabel#TituloSeccion {
-                font-weight: bold; color: #3d85c6; font-size: 14px;
-                text-transform: uppercase; margin-bottom: 5px;
-            }
-
-            QTableWidget#TablaPivot {
-                background-color: #1b263b; border: 1px solid #3d85c6;
-                gridline-color: #243447; color: #ffffff;
-                border-radius: 8px;
-            }
-
-            QHeaderView::section {
-                background-color: #243447; color: #3d85c6;
-                font-weight: bold; border: 1px solid #0d1b2a;
-            }
-
-            QFrame#GraficoCard {
-                background-color: #1b263b; border-radius: 12px; border: 1px solid #243447;
-            }
-
-            QComboBox {
-                background-color: #415a77; border: 1px solid #3d85c6;
-                border-radius: 5px; padding: 8px; color: white;
-            }
-
-            QPushButton#BtnAplicar {
-                background-color: #2ecc71; color: white; font-weight: bold;
-                padding: 15px; border-radius: 5px;
-            }
-
-            QPushButton#BtnSalir {
-                background-color: #c63d3d; font-weight: bold; padding: 10px; border-radius: 5px;
-            }
+            /* Estilos para los nuevos botones */
+            QPushButton#BtnLimpiar { background-color: #f39c12; color: white; font-weight: bold; padding: 10px; border-radius: 5px; }
+            QPushButton#BtnRegresar { background-color: #9b59b6; color: white; font-weight: bold; padding: 10px; border-radius: 5px; }
         """)
-
+        
         self.init_ui()
         self.cargar_modelo()
+
+    # =========================================================
+    # NUEVO MÉTODO PARA MOSTRAR LA VENTANA EMERGENTE
+    # =========================================================
+    def mostrar_ventana_grafico(self, tipo, titulo):
+        """Abre la ventana emergente con el gráfico seleccionado"""
+        if self.resumen_actual_grafico is None:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Aviso", "Primero debe generar una tabla de datos.")
+            return
+
+        # Preparamos los datos (Serie para el gráfico)
+        if isinstance(self.resumen_actual_grafico, pd.DataFrame) and self.resumen_actual_grafico.columns.name:
+            # Caso de Tabla Pivot: Sumamos las columnas para tener un total por fila
+            serie_datos = self.resumen_actual_grafico.sum(axis=1)
+        elif isinstance(self.resumen_actual_grafico, pd.DataFrame):
+            # Caso de Tabla Simple: Usamos la primera columna como índice y la segunda como valor
+            df = self.resumen_actual_grafico
+            serie_datos = df.set_index(df.columns[0])[df.columns[1]]
+        else:
+            serie_datos = self.resumen_actual_grafico
+
+        # Instanciamos y ejecutamos la ventana modal
+        ventana = VentanaGrafico(
+            titulo, 
+            tipo, 
+            serie_datos, 
+            self.combo_filas.currentText(), 
+            self.combo_valor.currentText(), 
+            self
+        )
+        ventana.exec()
 
     # =========================================================
     # UI
@@ -90,101 +135,85 @@ class PantallaAnalisisDinamico(QMainWindow):
         layout_principal.setContentsMargins(0, 0, 0, 0)
 
         # PANEL LATERAL
-        self.panel_config = QFrame()
+        self.panel_config = QWidget()
         self.panel_config.setObjectName("PanelControl")
-        self.panel_config.setFixedWidth(320)
-        ly_config = QVBoxLayout(self.panel_config)
-        ly_config.setContentsMargins(20, 20, 20, 20)
+        self.panel_config.setMinimumWidth(320)
+
+        self.scroll_panel = QScrollArea()
+        self.scroll_panel.setWidgetResizable(True)
+        self.scroll_panel.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_panel.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_panel.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
+        self.scroll_panel.setFixedWidth(340)
+
+        ly_panel = QVBoxLayout(self.panel_config)
+        ly_panel.setContentsMargins(20, 20, 20, 20)
+        ly_panel.setSpacing(12)
 
         lbl_campos = QLabel("CONFIGURACIÓN OLAP")
         lbl_campos.setObjectName("TituloSeccion")
-        ly_config.addWidget(lbl_campos)
+        ly_panel.addWidget(lbl_campos)
 
-        ly_config.addSpacing(15)
-
-        ly_config.addWidget(QLabel("TABLA DE HECHOS:"))
+        ly_panel.addWidget(QLabel("TABLA DE HECHOS:"))
         self.combo_hechos = QComboBox()
         self.combo_hechos.currentIndexChanged.connect(self.cambiar_configuracion_modelo)
-        ly_config.addWidget(self.combo_hechos)
+        ly_panel.addWidget(self.combo_hechos)
 
-        ly_config.addSpacing(12)
-
-        ly_config.addWidget(QLabel("DIMENSIÓN 1:"))
+        ly_panel.addWidget(QLabel("DIMENSIÓN 1:"))
         self.combo_dim1_entidad = QComboBox()
         self.combo_dim1_entidad.currentIndexChanged.connect(self.cambiar_configuracion_modelo)
-        ly_config.addWidget(self.combo_dim1_entidad)
+        ly_panel.addWidget(self.combo_dim1_entidad)
 
-        ly_config.addSpacing(12)
-
-        ly_config.addWidget(QLabel("DIMENSIÓN 2 (OPCIONAL):"))
+        ly_panel.addWidget(QLabel("DIMENSIÓN 2 (OPCIONAL):"))
         self.combo_dim2_entidad = QComboBox()
         self.combo_dim2_entidad.currentIndexChanged.connect(self.cambiar_configuracion_modelo)
-        ly_config.addWidget(self.combo_dim2_entidad)
+        ly_panel.addWidget(self.combo_dim2_entidad)
 
-        ly_config.addSpacing(12)
-
-        ly_config.addWidget(QLabel("CAMPO EN FILAS:"))
+        ly_panel.addWidget(QLabel("CAMPO EN FILAS:"))
         self.combo_filas = QComboBox()
-        ly_config.addWidget(self.combo_filas)
+        ly_panel.addWidget(self.combo_filas)
 
-        ly_config.addSpacing(12)
-
-        ly_config.addWidget(QLabel("CAMPO EN COLUMNAS:"))
+        ly_panel.addWidget(QLabel("CAMPO EN COLUMNAS:"))
         self.combo_columnas = QComboBox()
-        ly_config.addWidget(self.combo_columnas)
+        ly_panel.addWidget(self.combo_columnas)
 
-        ly_config.addSpacing(12)
-
-        ly_config.addWidget(QLabel("VALOR:"))
+        ly_panel.addWidget(QLabel("VALOR:"))
         self.combo_valor = QComboBox()
-        ly_config.addWidget(self.combo_valor)
+        ly_panel.addWidget(self.combo_valor)
 
-        ly_config.addSpacing(12)
-
-        ly_config.addWidget(QLabel("AGREGACIÓN:"))
+        ly_panel.addWidget(QLabel("AGREGACIÓN:"))
         self.combo_agregacion = QComboBox()
         self.combo_agregacion.addItems(["suma", "promedio", "conteo", "máximo", "mínimo"])
-        ly_config.addWidget(self.combo_agregacion)
+        ly_panel.addWidget(self.combo_agregacion)
 
-        ly_config.addSpacing(12)
-
-        ly_config.addWidget(QLabel("FILTRO 1 (OPCIONAL):"))
+        ly_panel.addWidget(QLabel("FILTRO 1 (OPCIONAL):"))
         self.combo_filtro_campo = QComboBox()
         self.combo_filtro_campo.currentIndexChanged.connect(self.actualizar_valores_filtro)
-        ly_config.addWidget(self.combo_filtro_campo)
+        ly_panel.addWidget(self.combo_filtro_campo)
 
-        ly_config.addSpacing(12)
-
-        ly_config.addWidget(QLabel("VALOR DEL FILTRO:"))
+        ly_panel.addWidget(QLabel("VALOR DEL FILTRO:"))
         self.combo_filtro_valor = QComboBox()
-        ly_config.addWidget(self.combo_filtro_valor)
+        ly_panel.addWidget(self.combo_filtro_valor)
 
-        ly_config.addSpacing(20)
+        ly_panel.addSpacing(20)
 
         self.lbl_estado = QLabel("Configure hechos, dimensiones, valor, agregación y filtro.")
         self.lbl_estado.setStyleSheet("color: #a0aeba; font-size: 12px;")
         self.lbl_estado.setWordWrap(True)
-        ly_config.addWidget(self.lbl_estado)
+        ly_panel.addWidget(self.lbl_estado)
 
-        ly_config.addSpacing(20)
+        ly_panel.addStretch()
 
-        self.btn_aplicar = QPushButton("ACTUALIZAR VISTA")
-        self.btn_aplicar.setObjectName("BtnAplicar")
-        self.btn_aplicar.clicked.connect(self.refrescar_analisis)
-        ly_config.addWidget(self.btn_aplicar)
-
-        ly_config.addStretch()
-
-        self.btn_salir = QPushButton("Cerrar Dashboard")
-        self.btn_salir.setObjectName("BtnSalir")
-        self.btn_salir.clicked.connect(self.close)
-        ly_config.addWidget(self.btn_salir)
-
-        layout_principal.addWidget(self.panel_config)
+        self.panel_config.setLayout(ly_panel)
+        self.scroll_panel.setWidget(self.panel_config)
+        layout_principal.addWidget(self.scroll_panel)
 
         # ÁREA CENTRAL
         container_central = QWidget()
         self.layout_central = QVBoxLayout(container_central)
+        self.layout_central.setContentsMargins(20, 20, 20, 20)
+        self.layout_central.setSpacing(12)
 
         self.lbl_modelo = QLabel("MODELO CARGADO")
         self.lbl_modelo.setObjectName("TituloSeccion")
@@ -196,27 +225,75 @@ class PantallaAnalisisDinamico(QMainWindow):
 
         self.tabla_resumen = QTableWidget()
         self.tabla_resumen.setObjectName("TablaPivot")
-        self.tabla_resumen.setFixedHeight(240)
+        self.tabla_resumen.setMinimumHeight(280)
+        self.tabla_resumen.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.tabla_resumen.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.layout_central.addWidget(self.tabla_resumen)
 
-        self.layout_central.addSpacing(20)
+        resumen_frame = QFrame()
+        resumen_frame.setObjectName("GraficoCard")
+        resumen_frame.setStyleSheet("QFrame#GraficoCard { background-color: #16202b; border: 1px solid #3d85c6; border-radius: 12px; }")
+        ly_resumen = QVBoxLayout(resumen_frame)
+        ly_resumen.setContentsMargins(12, 12, 12, 12)
+        ly_resumen.addWidget(self.tabla_resumen)
 
-        self.scroll = QScrollArea()
-        self.scroll.setWidgetResizable(True)
-        self.scroll.setStyleSheet("border: none; background: transparent;")
+        self.layout_central.addWidget(resumen_frame)
+        self.layout_central.addSpacing(8)
 
-        self.widget_graficos = QWidget()
-        self.layout_grid = QVBoxLayout(self.widget_graficos)
+        # CONTENEDOR PARA LOS BOTONES DE GRÁFICOS
+        # Creamos un layout horizontal para los 4 botones solicitados
+        ly_botones = QHBoxLayout()
+        self.lista_botones = []
 
-        self.lbl_info = QLabel("Configure filas, columnas, valor y filtro; luego presione 'Actualizar vista'.")
-        self.lbl_info.setStyleSheet("font-size: 16px; color: #3d85c6;")
-        self.layout_grid.addWidget(self.lbl_info, alignment=Qt.AlignmentFlag.AlignCenter)
+        opciones = [
+            ("Gráficos de barras", "bar", "Visualización de Barras"),
+            ("Gráficos circular", "pie", "Distribución Circular"),
+            ("Gráficos de evolución", "line", "Tendencia y Evolución"),
+            ("Gráficos de puntos", "scatter", "Puntos de Dispersión")
+        ]
 
-        self.scroll.setWidget(self.widget_graficos)
-        self.layout_central.addWidget(self.scroll)
+        for texto, tipo, titulo in opciones:
+            btn = QPushButton(texto)
+            btn.setObjectName("BtnGrafico")
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setEnabled(False)  # Se activarán cuando presiones "ACTUALIZAR VISTA"
+            
+            # Conexión al método que abre la ventana emergente
+            btn.clicked.connect(lambda chk, t=tipo, tt=titulo: self.mostrar_ventana_grafico(t, tt))
+            
+            ly_botones.addWidget(btn)
+            self.lista_botones.append(btn)
+
+        # Agregamos el layout de botones al layout central principal
+        self.layout_central.addLayout(ly_botones)
+        self.layout_central.addSpacing(10)
+
+        # Layout para botones de acciones
+        ly_acciones = QHBoxLayout()
+        self.btn_cargar = QPushButton("Cargar")
+        self.btn_cargar.setObjectName("BtnAplicar")
+        self.btn_cargar.clicked.connect(self.refrescar_analisis)
+        ly_acciones.addWidget(self.btn_cargar)
+
+        self.btn_limpiar = QPushButton("Limpiar")
+        self.btn_limpiar.setObjectName("BtnLimpiar")
+        self.btn_limpiar.clicked.connect(self.limpiar_configuracion)
+        ly_acciones.addWidget(self.btn_limpiar)
+
+        self.btn_regresar = QPushButton("Regresar")
+        self.btn_regresar.setObjectName("BtnRegresar")
+        self.btn_regresar.clicked.connect(self.regresar_a_vista_cubo)
+        ly_acciones.addWidget(self.btn_regresar)
+
+        self.btn_salir_prog = QPushButton("Salir")
+        self.btn_salir_prog.setObjectName("BtnSalir")
+        self.btn_salir_prog.clicked.connect(QApplication.instance().quit)
+        ly_acciones.addWidget(self.btn_salir_prog)
+
+        self.layout_central.addLayout(ly_acciones)
 
         layout_principal.addWidget(container_central)
+
+        # Área para gráficos
 
     # =========================================================
     # CARGA DEL MODELO
@@ -630,8 +707,8 @@ class PantallaAnalisisDinamico(QMainWindow):
                     aggfunc=aggfunc,
                     fill_value=0
                 )
+                self.resumen_actual_grafico = resumen
                 self.mostrar_pivot_completa(resumen)
-                self.regenerar_graficos_desde_pivot(resumen, campo_filas, valor_real, aggfunc)
             else:
                 resumen = (
                     self.df_analisis
@@ -639,8 +716,8 @@ class PantallaAnalisisDinamico(QMainWindow):
                     .agg(aggfunc)
                     .reset_index()
                 )
+                self.resumen_actual_grafico = resumen
                 self.mostrar_resumen_simple(resumen, campo_filas, valor_real, aggfunc)
-                self.regenerar_graficos_simple(campo_filas, valor_real, aggfunc)
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo generar el análisis.\n\n{str(e)}")
@@ -658,6 +735,9 @@ class PantallaAnalisisDinamico(QMainWindow):
             item_valor = QTableWidgetItem(self.formatear_valor(row[valor_real]))
             item_valor.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self.tabla_resumen.setItem(i, 1, item_valor)
+
+        for btn in self.lista_botones:
+            btn.setEnabled(True)
 
     def mostrar_pivot_completa(self, pivot_df):
         self.tabla_resumen.clear()
@@ -678,7 +758,7 @@ class PantallaAnalisisDinamico(QMainWindow):
                 item = QTableWidgetItem(self.formatear_valor(valor))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self.tabla_resumen.setItem(i, j + 1, item)
-
+        for btn in self.lista_botones: btn.setEnabled(True)
     # =========================================================
     # GRÁFICOS
     # =========================================================
@@ -773,6 +853,28 @@ class PantallaAnalisisDinamico(QMainWindow):
         ly.addWidget(FigureCanvas(fig))
         return card
 
+    def limpiar_configuracion(self):
+        self.combo_hechos.setCurrentIndex(-1)
+        self.combo_dim1_entidad.setCurrentIndex(-1)
+        self.combo_dim2_entidad.setCurrentIndex(0)
+        self.combo_filas.clear()
+        self.combo_columnas.clear()
+        self.combo_valor.clear()
+        self.combo_agregacion.setCurrentIndex(0)
+        self.combo_filtro_campo.setCurrentIndex(0)
+        self.combo_filtro_valor.clear()
+        self.combo_filtro_valor.addItem("(Todos)")
+        self.tabla_resumen.clear()
+        self.tabla_resumen.setRowCount(0)
+        self.tabla_resumen.setColumnCount(0)
+        for btn in self.lista_botones:
+            btn.setEnabled(False)
+        self.resumen_actual_grafico = None
+        self.lbl_estado.setText("Configure hechos, dimensiones, valor, agregación y filtro.")
+
+    def regresar_a_vista_cubo(self):
+        self.close()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -846,3 +948,7 @@ if __name__ == "__main__":
     win = PantallaAnalisisDinamico(modelo_prueba)
     win.show()
     sys.exit(app.exec())
+   
+
+
+    
