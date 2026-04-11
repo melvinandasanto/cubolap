@@ -2,6 +2,9 @@ use master;
 CREATE DATABASE cubolap;
 GO
 
+use cubolap;
+GO
+
 CREATE TABLE rol (
     idrol INT IDENTITY(1,1) PRIMARY KEY,
     nombrerol VARCHAR(50) NOT NULL UNIQUE

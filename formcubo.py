@@ -1,5 +1,6 @@
 import sys
 import os
+import numpy as np
 
 # Compatibilidad con PyQt6 para Matplotlib
 os.environ["QT_API"] = "pyqt6"
@@ -639,6 +640,16 @@ class PantallaAnalisisDinamico(QMainWindow):
             else:
                 cols_finales.append(col)
         df.columns = cols_finales
+
+        # Medidas calculadas con numpy
+        if f"{self.entidad_hechos_actual}.monto" in df.columns:
+            col_monto = f"{self.entidad_hechos_actual}.monto"
+            df[f"{self.entidad_hechos_actual}.utilidad"] = np.subtract(df[col_monto], 20)
+            df[f"{self.entidad_hechos_actual}.margen"] = np.divide(
+                df[f"{self.entidad_hechos_actual}.utilidad"],
+                df[col_monto],
+                where=df[col_monto] != 0
+            )
 
         return df
 
