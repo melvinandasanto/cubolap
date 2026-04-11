@@ -107,27 +107,18 @@ class MenuPrincipalOLAP(QMainWindow):
         
         # 1. Cargar un archivo
         self.btn_cargar = QPushButton("📁  Cargar un archivo")
-        self.btn_cargar.clicked.connect(self.abrir_formrutas)
         layout_menu.addWidget(self.btn_cargar)
 
         # 2. Añadir nueva conexión
         self.btn_conexion = QPushButton("🌐  Añadir una nueva conexión")
-        self.btn_conexion.clicked.connect(self.abrir_formconexiones)
         layout_menu.addWidget(self.btn_conexion)
 
-        # 3. Añadir usuarios (solo para administradores)
+        # 3. Añadir usuarios
         self.btn_usuarios = QPushButton("👥  Añadir usuarios")
-        self.btn_usuarios.clicked.connect(self.abrir_formusuarios)
-        
-        if self.sesion.es_administrador():
-            layout_menu.addWidget(self.btn_usuarios)
-        else:
-            # Guardar referencia pero no visualizar
-            self.btn_usuarios.setVisible(False)
+        layout_menu.addWidget(self.btn_usuarios)
 
         # 4. Creación de cubo
         self.btn_cubo = QPushButton("🧊  Creación de cubo")
-        self.btn_cubo.clicked.connect(self.abrir_formdatosparacubo)
         layout_menu.addWidget(self.btn_cubo)
 
         # Espacio flexible

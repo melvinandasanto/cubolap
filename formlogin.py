@@ -110,26 +110,9 @@ class FormLogin(QMainWindow):
             host="PC1\\SQLEXPRESS",
             database="cubolap"
         )
-        
-        datos_usuario = auth.login(usuario, contrasena)
-        
-        if datos_usuario:
-            # Guardar sesión
-            sesion = SesionUsuario()
-            sesion.iniciar_sesion(
-                datos_usuario['id'],
-                datos_usuario['nombre'],
-                datos_usuario['id_rol'],
-                datos_usuario['nombre_rol'],
-                datos_usuario['activo']
-            )
-            
-            # Abrir menú principal
-            from formMenu import MenuPrincipalOLAP
-            self.menu_window = MenuPrincipalOLAP()
-            self.menu_window.show()
-            self.close()
+
+        if auth.login(usuario, contrasena):
+            messagebox.showinfo("Éxito", "Inicio de sesión correcto ✅")
         else:
-            QMessageBox.critical(self, "Error", "Usuario o contraseña incorrectos ❌")
-            self.pass_entry.clear()
+            messagebox.showerror("Error", "Usuario o contraseña incorrectos ❌")
 
