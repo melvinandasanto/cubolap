@@ -25,18 +25,18 @@ CREATE TABLE rol (
         host VARCHAR(100) NOT NULL,
         puerto INT NULL,
         usuario VARCHAR(50) NULL,
-        contrasenia VARCHAR(100) NOT NULL,
+        contrasenia VARCHAR(100) NULL,
         basedatos VARCHAR(50) NOT NULL,
         CONSTRAINT CK_Puerto_Requerido CHECK (
-            (gestor = 'SQL Server' AND puerto IS NULL AND host IS NULL) OR 
-            (gestor = 'MySQL' AND puerto IS NOT NULL AND host IS NOT NULL)
+            (gestor = 'SQL Server') OR 
+            (gestor = 'MySQL' AND puerto IS NOT NULL AND host IS NOT NULL AND contrasenia IS NOT NULL)
         )
     );
     GO
 
     CREATE TABLE rutas (
     idruta INT IDENTITY(1,1) PRIMARY KEY,
-    nombreruta VARCHAR(150) NOT NULL UNIQUE,
+    nombreruta VARCHAR(150) NOT NULL UNIQUE
     );
     GO
 

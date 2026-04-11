@@ -6,12 +6,31 @@ class ClaseConexiones:
                  usuario=None, contrasenia=None, basedatos=None):
         self.conexion = Conectar()
         self._idconexion = idconexion
-        self._gestor = gestor
+        self._gestor = self._normalizar_gestor(gestor)
         self._host = host
         self._puerto = puerto
         self._usuario = usuario
         self._contrasenia = contrasenia
         self._basedatos = basedatos
+
+    def _normalizar_gestor(self, gestor):
+        if not gestor:
+            return gestor
+        gestor_normalizado = str(gestor).strip().lower()
+        if gestor_normalizado in ("mysql", "my sql"):
+            return "mysql"
+        if gestor_normalizado in ("sqlserver", "sql server"):
+            return "sqlserver"
+        return gestor_normalizado
+
+    def _gestor_para_bd(self):
+        if not self.gestor:
+            return self.gestor
+        if self.gestor == "mysql":
+            return "MySQL"
+        if self.gestor == "sqlserver":
+            return "SQL Server"
+        return self.gestor
 
     @property
     def idconexion(self):
@@ -27,7 +46,7 @@ class ClaseConexiones:
 
     @gestor.setter
     def gestor(self, value):
-        self._gestor = value
+        self._gestor = self._normalizar_gestor(value)
 
     @property
     def host(self):
@@ -69,7 +88,6 @@ class ClaseConexiones:
     def basedatos(self, value):
         self._basedatos = value
 
-
     def Guardar(self):
         conexion = Conectar()
         return conexion.ejecutar_sql(
@@ -77,7 +95,7 @@ class ClaseConexiones:
             INSERT INTO CONEXIONES (gestor, host, puerto, usuario, contrasenia, basedatos)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (self.gestor, self.host, self.puerto, self.usuario,
+            (self._gestor_para_bd(), self.host, self.puerto, self.usuario,
              self.contrasenia, self.basedatos)
         )
 
@@ -96,7 +114,7 @@ class ClaseConexiones:
             SET gestor = ?, host = ?, puerto = ?, usuario = ?, contrasenia = ?, basedatos = ? 
             WHERE idconexion = ?
             """,
-            (self.gestor, self.host, self.puerto, self.usuario,
+            (self._gestor_para_bd(), self.host, self.puerto, self.usuario,
              self.contrasenia, self.basedatos, conexion_id)
         )
 
@@ -151,5 +169,5 @@ class ClaseConexiones:
             if conn:
                 try:
                     conn.close()
-                except:
+                except Exception:
                     pass
