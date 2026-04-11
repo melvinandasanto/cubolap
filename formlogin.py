@@ -1,72 +1,135 @@
-import tkinter as tk
-from tkinter import font
+import sys
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, 
+    QLineEdit, QPushButton, QLabel, QFrame, QMessageBox
+)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 from claseLogin import Autenticacion
-from tkinter import messagebox
+from SesionGlobal import SesionUsuario
 
-class Login:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Sistema de Análisis OLAP")
-        self.root.geometry("500x500")
+
+class FormLogin(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Sistema de Análisis OLAP")
+        self.setGeometry(100, 100, 500, 500)
         
-        self.bg_color = "#121f2d"
-        self.card_color = "#1e2d3e"
+        self.bg_color = "#0d1b2a"
+        self.card_color = "#1b263b"
         self.entry_bg = "#2a3b4d"
-        self.btn_color = "#4a90e2"
+        self.btn_color = "#3d85c6"
         
-        self.root.configure(bg=self.bg_color)
-
-        self.container = tk.Frame(self.root, bg=self.card_color, padx=40, pady=40, highlightbackground="#34495e", highlightthickness=1)
-        self.container.place(relx=0.5, rely=0.5, anchor="center", relwidth=0.8, relheight=0.8)
-
-        self.title_font = font.Font(family="Segoe UI", size=18, weight="bold")
-        self.label_font = font.Font(family="Segoe UI", size=10)
-        self.btn_font = font.Font(family="Segoe UI", size=11, weight="bold")
-
-        tk.Label(self.container, text="SISTEMA DE ANÁLISIS OLAP", fg="white", bg=self.card_color, font=self.title_font).pack(pady=(0, 5))
-
-        tk.Label(self.container, text="Usuario", fg="white", bg=self.card_color, font=self.label_font).pack(anchor="w")
-        self.user_entry = tk.Entry(self.container, bg=self.entry_bg, fg="white", insertbackground="white", borderwidth=0, font=("Segoe UI", 12))
-        self.user_entry.pack(fill="x", pady=(5, 20), ipady=8)
-
-        tk.Label(self.container, text="Contraseña", fg="white", bg=self.card_color, font=self.label_font).pack(anchor="w")
-        self.pass_entry = tk.Entry(self.container, bg=self.entry_bg, fg="white", insertbackground="white", borderwidth=0, font=("Segoe UI", 12), show="•")
-        self.pass_entry.pack(fill="x", pady=(5, 30), ipady=8)
-
-        self.btn_login = tk.Button(
-            self.container,
-            text="Iniciar Sesión",
-            bg=self.btn_color,
-            fg="white",
-            activebackground="#357abd",
-            activeforeground="white",
-            font=self.btn_font,
-            borderwidth=0,
-            cursor="hand2",
-            command=self.iniciar_sesion
-        )
-        self.btn_login.pack(fill="x", ipady=10)
-
-        self.footer = tk.Frame(self.container, bg=self.card_color)
-        self.footer.pack(fill="x", pady=(30, 0))
-
+        self.setStyleSheet(f"""
+            QMainWindow {{
+                background-color: {self.bg_color};
+            }}
+            QLineEdit {{
+                background-color: {self.entry_bg};
+                color: white;
+                border: 1px solid #3d85c6;
+                border-radius: 5px;
+                padding: 10px;
+                font-size: 12px;
+            }}
+            QPushButton {{
+                background-color: {self.btn_color};
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 12px;
+                font-weight: bold;
+                font-size: 14px;
+            }}
+            QPushButton:hover {{
+                background-color: #5fa2dd;
+            }}
+        """)
+        
+        self.init_ui()
+    
+    def init_ui(self):
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(40, 40, 40, 40)
+        layout.setSpacing(20)
+        
+        # Contenedor principal
+        container = QFrame()
+        container.setStyleSheet(f"background-color: {self.card_color}; border-radius: 10px;")
+        container_layout = QVBoxLayout(container)
+        container_layout.setContentsMargins(30, 30, 30, 30)
+        
+        # Título
+        title = QLabel("SISTEMA DE ANÁLISIS OLAP")
+        title.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
+        title.setStyleSheet("color: white;")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        container_layout.addWidget(title)
+        
+        # Espaciador
+        container_layout.addSpacing(10)
+        
+        # Usuario
+        lbl_usuario = QLabel("Usuario")
+        lbl_usuario.setStyleSheet("color: white; font-size: 11px;")
+        container_layout.addWidget(lbl_usuario)
+        self.user_entry = QLineEdit()
+        container_layout.addWidget(self.user_entry)
+        
+        # Contraseña
+        lbl_pass = QLabel("Contraseña")
+        lbl_pass.setStyleSheet("color: white; font-size: 11px;")
+        container_layout.addWidget(lbl_pass)
+        self.pass_entry = QLineEdit()
+        self.pass_entry.setEchoMode(QLineEdit.EchoMode.Password)
+        container_layout.addWidget(self.pass_entry)
+        
+        # Espaciador
+        container_layout.addSpacing(20)
+        
+        # Botón Iniciar Sesión
+        self.btn_login = QPushButton("Iniciar Sesión")
+        self.btn_login.clicked.connect(self.iniciar_sesion)
+        container_layout.addWidget(self.btn_login)
+        
+        layout.addWidget(container)
+        layout.addStretch()
+    
     def iniciar_sesion(self):
-        usuario = self.user_entry.get()
-        contrasena = self.pass_entry.get()
-
+        usuario = self.user_entry.text()
+        contrasena = self.pass_entry.text()
+        
+        if not usuario or not contrasena:
+            QMessageBox.warning(self, "Advertencia", "Por favor ingrese usuario y contraseña")
+            return
+        
         auth = Autenticacion(
             gestor="sqlserver",
             host="PC1\\SQLEXPRESS",
             database="cubolap"
         )
-
-        if auth.login(usuario, contrasena):
-            messagebox.showinfo("Éxito", "Inicio de sesión correcto ✅")
+        
+        datos_usuario = auth.login(usuario, contrasena)
+        
+        if datos_usuario:
+            # Guardar sesión
+            sesion = SesionUsuario()
+            sesion.iniciar_sesion(
+                datos_usuario['id'],
+                datos_usuario['nombre'],
+                datos_usuario['id_rol'],
+                datos_usuario['nombre_rol'],
+                datos_usuario['activo']
+            )
+            
+            # Abrir menú principal
+            from formMenu import MenuPrincipalOLAP
+            self.menu_window = MenuPrincipalOLAP()
+            self.menu_window.show()
+            self.close()
         else:
-            messagebox.showerror("Error", "Usuario o contraseña incorrectos ❌")
+            QMessageBox.critical(self, "Error", "Usuario o contraseña incorrectos ❌")
+            self.pass_entry.clear()
 
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = Login(root)
-    root.mainloop()

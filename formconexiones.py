@@ -2,7 +2,7 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QComboBox, QFrame, QMessageBox,
-    QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy
+    QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QScrollArea
 )
 from PyQt6.QtCore import Qt
 
@@ -10,8 +10,9 @@ from claseconexiones import ClaseConexiones
 
 
 class AdministradorConexiones(QMainWindow):
-    def __init__(self):
+    def __init__(self, parent_menu=None):
         super().__init__()
+        self.parent_menu = parent_menu
         self.setWindowTitle("Sistema OLAP - Administrador de Conexiones")
         self.setMinimumSize(1200, 700)
         self.id_seleccionado = None
@@ -92,6 +93,11 @@ class AdministradorConexiones(QMainWindow):
                 color: white;
             }
 
+            QPushButton#BtnVolver {
+                background-color: #e67e22;
+                color: white;
+            }
+
             QMessageBox {
                 background-color: #243447;
             }
@@ -131,11 +137,9 @@ class AdministradorConexiones(QMainWindow):
 
         main_layout.addLayout(left_container, stretch=3)
 
-        # DERECHA
+        # DERECHA - PANEL CON SCROLL
         self.panel = QFrame()
         self.panel.setObjectName("PanelLateral")
-        self.panel.setFixedWidth(350)
-        self.panel.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
 
         form_layout = QVBoxLayout(self.panel)
         form_layout.setContentsMargins(20, 20, 20, 20)
@@ -198,8 +202,24 @@ class AdministradorConexiones(QMainWindow):
         self.btn_eliminar.clicked.connect(self.eliminar_conexion)
         form_layout.addWidget(self.btn_eliminar)
 
+        self.btn_volver = QPushButton("Volver al Menú")
+        self.btn_volver.setObjectName("BtnVolver")
+        self.btn_volver.clicked.connect(self.volver_al_menu)
+        form_layout.addWidget(self.btn_volver)
+
         form_layout.addStretch()
-        main_layout.addWidget(self.panel)
+
+        # Envolver el panel en un QScrollArea
+        self.scroll_panel = QScrollArea()
+        self.scroll_panel.setWidgetResizable(True)
+        self.scroll_panel.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_panel.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_panel.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
+        self.scroll_panel.setFixedWidth(365)
+        self.scroll_panel.setWidget(self.panel)
+
+        main_layout.addWidget(self.scroll_panel)
 
     def actualizar_placeholders(self):
         gestor = self.cb_gestor.currentText().lower()
@@ -391,6 +411,12 @@ class AdministradorConexiones(QMainWindow):
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo cargar el registro:\n{str(e)}")
+
+    def volver_al_menu(self):
+        """Vuelve al menú principal"""
+        if self.parent_menu:
+            self.parent_menu.show()
+        self.close()
 
 
 if __name__ == "__main__":

@@ -12,8 +12,9 @@ from claseusuario import Usuario
 
 
 class FormRutas(QMainWindow):
-    def __init__(self):
+    def __init__(self, parent_menu=None):
         super().__init__()
+        self.parent_menu = parent_menu
         self.setWindowTitle("Sistema OLAP - RUTAS")
         self.resize(1350, 780)
 
@@ -93,6 +94,18 @@ class FormRutas(QMainWindow):
 
             QPushButton#BtnGris:hover {
                 background-color: #64798f;
+            }
+
+            QPushButton#BtnVolver {
+                background-color: #e67e22;
+                border-radius: 6px;
+                font-weight: bold;
+                padding: 10px;
+                color: white;
+            }
+
+            QPushButton#BtnVolver:hover {
+                background-color: #f39c12;
             }
 
             QTableWidget {
@@ -185,6 +198,11 @@ class FormRutas(QMainWindow):
         self.btn_cargar_preview.setObjectName("BtnAzul")
         self.btn_cargar_preview.clicked.connect(self.cargar_preview_desde_textbox)
         fila_botones.addWidget(self.btn_cargar_preview)
+
+        self.btn_volver = QPushButton("Volver al Menú")
+        self.btn_volver.setObjectName("BtnVolver")
+        self.btn_volver.clicked.connect(self.volver_al_menu)
+        fila_botones.addWidget(self.btn_volver)
 
         layout_ruta.addLayout(fila_botones)
         layout_principal.addWidget(tarjeta_ruta, 0)
@@ -366,6 +384,12 @@ class FormRutas(QMainWindow):
         for i in range(len(df)):
             for j in range(len(df.columns)):
                 self.tabla_preview.setItem(i, j, QTableWidgetItem(str(df.iloc[i, j])))
+
+    def volver_al_menu(self):
+        """Vuelve al menú principal"""
+        if self.parent_menu:
+            self.parent_menu.show()
+        self.close()
 
 
 if __name__ == "__main__":

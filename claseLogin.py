@@ -15,11 +15,24 @@ class Autenticacion:
             self.conexion.trusted_connection = False
 
     def login(self, usuario, contrasena):
+        """Login y retorna datos del usuario si es exitoso, None si no"""
         if usuario == "default" and contrasena == "00000":
-            return True
+            # Usuario por defecto
+            return {
+                'id': 1,
+                'nombre': 'default',
+                'id_rol': 1,
+                'nombre_rol': 'Administrador',
+                'activo': True
+            }
 
         try:
-            consulta = "SELECT * FROM usuarios WHERE nombre = ? AND contrasena = ?"
+            consulta = """
+                SELECT u.idusuario, u.nombre, u.idrol, r.nombrerol, u.activo 
+                FROM usuario u
+                LEFT JOIN rol r ON u.idrol = r.idrol
+                WHERE u.nombre = ? AND u.contrasenia = ?
+            """
 
             resultado = self.conexion.ejecutar_sql(
                 consulta,
@@ -28,10 +41,16 @@ class Autenticacion:
             )
 
             if resultado:
-                return True
+                return {
+                    'id': resultado[0],
+                    'nombre': resultado[1],
+                    'id_rol': resultado[2],
+                    'nombre_rol': resultado[3] or 'Sin Rol',
+                    'activo': resultado[4]
+                }
             else:
-                return False
+                return None
 
         except Exception as e:
             print("Error en login:", e)
-            return False
+            return None

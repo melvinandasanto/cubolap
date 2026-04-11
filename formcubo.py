@@ -49,8 +49,9 @@ class VentanaGrafico(QDialog):
 #fin de la clase de la ventana de grficos
 
 class PantallaAnalisisDinamico(QMainWindow):
-    def __init__(self, modelo_datos=None):
+    def __init__(self, modelo_datos=None, parent_menu=None):
         super().__init__()
+        self.parent_menu = parent_menu
         self.setWindowTitle("Sistema OLAP - Dashboard Adaptativo")
         self.resize(1400, 900)
 
@@ -76,7 +77,7 @@ class PantallaAnalisisDinamico(QMainWindow):
             QFrame#GraficoCard { background-color: #1b263b; border-radius: 12px; border: 1px solid #243447; }
             QComboBox { background-color: #415a77; border: 1px solid #3d85c6; border-radius: 5px; padding: 8px; color: white; }
             QPushButton#BtnAplicar { background-color: #2ecc71; color: white; font-weight: bold; padding: 15px; border-radius: 5px; }
-            QPushButton#BtnSalir { background-color: #c63d3d; font-weight: bold; padding: 10px; border-radius: 5px; }
+            QPushButton#BtnVolver { background-color: #e67e22; font-weight: bold; padding: 10px; border-radius: 5px; }
             
             /* Estilo para los botones de gráficos */
             QPushButton#BtnGrafico { 
@@ -280,9 +281,9 @@ class PantallaAnalisisDinamico(QMainWindow):
         self.btn_limpiar.clicked.connect(self.limpiar_configuracion)
         ly_acciones.addWidget(self.btn_limpiar)
 
-        self.btn_regresar = QPushButton("Regresar")
-        self.btn_regresar.setObjectName("BtnRegresar")
-        self.btn_regresar.clicked.connect(self.regresar_a_vista_cubo)
+        self.btn_regresar = QPushButton("Volver a Vista Previa")
+        self.btn_regresar.setObjectName("BtnVolver")
+        self.btn_regresar.clicked.connect(self.volver_a_vista_previa)
         ly_acciones.addWidget(self.btn_regresar)
 
         self.btn_salir_prog = QPushButton("Salir")
@@ -883,7 +884,10 @@ class PantallaAnalisisDinamico(QMainWindow):
         self.resumen_actual_grafico = None
         self.lbl_estado.setText("Configure hechos, dimensiones, valor, agregación y filtro.")
 
-    def regresar_a_vista_cubo(self):
+    def volver_a_vista_previa(self):
+        """Vuelve a VistaPreviaDinamica"""
+        if self.parent_menu:
+            self.parent_menu.show()
         self.close()
 
 

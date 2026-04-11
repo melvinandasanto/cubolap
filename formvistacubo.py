@@ -13,8 +13,9 @@ from constructormodelodatos import ConstructorModeloDatos
 
 
 class VistaPreviaDinamica(QMainWindow):
-    def __init__(self, tipo_origen, id_origen):
+    def __init__(self, tipo_origen, id_origen, parent_menu=None):
         super().__init__()
+        self.parent_menu = parent_menu
 
         self.tipo_origen = tipo_origen
         self.id_origen = id_origen
@@ -96,8 +97,8 @@ class VistaPreviaDinamica(QMainWindow):
                 min-width: 180px;
             }
 
-            QPushButton#BtnSalir {
-                background-color: #c63d3d;
+            QPushButton#BtnVolver {
+                background-color: #e67e22;
                 color: white;
                 min-width: 100px;
             }
@@ -233,16 +234,16 @@ class VistaPreviaDinamica(QMainWindow):
         btn_layout = QHBoxLayout()
         btn_layout.setContentsMargins(20, 10, 20, 15)
 
-        self.btn_salir = QPushButton("Salir")
-        self.btn_salir.setObjectName("BtnSalir")
-        self.btn_salir.clicked.connect(self.close)
+        self.btn_volver = QPushButton("Volver a Datos")
+        self.btn_volver.setObjectName("BtnVolver")
+        self.btn_volver.clicked.connect(self.volver_a_datos)
 
         self.btn_analizar = QPushButton("Ir al Cubo")
         self.btn_analizar.setObjectName("BtnAnalizar")
         self.btn_analizar.setEnabled(False)
         self.btn_analizar.clicked.connect(self.abrir_analisis)
 
-        btn_layout.addWidget(self.btn_salir)
+        btn_layout.addWidget(self.btn_volver)
         btn_layout.addStretch()
         btn_layout.addWidget(self.btn_analizar)
 
@@ -479,8 +480,14 @@ class VistaPreviaDinamica(QMainWindow):
             )
             return
 
-        self.ventana_analisis = PantallaAnalisisDinamico(self.modelo_datos)
+        self.ventana_analisis = PantallaAnalisisDinamico(self.modelo_datos, self)
         self.ventana_analisis.show()
+        self.hide()
+
+    def volver_a_datos(self):
+        """Vuelve a SeleccionOrigenOLAP"""
+        if self.parent_menu:
+            self.parent_menu.show()
         self.close()
 
 

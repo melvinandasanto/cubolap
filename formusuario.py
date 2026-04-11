@@ -2,15 +2,16 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
     QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
-    QPushButton, QHeaderView, QFrame, QLineEdit, QMessageBox
+    QPushButton, QHeaderView, QFrame, QLineEdit, QMessageBox, QScrollArea
 )
 from PyQt6.QtCore import Qt
 from claseusuario import Usuario
 
 
 class GestionUsuariosApp(QMainWindow):
-    def __init__(self):
+    def __init__(self, parent_menu=None):
         super().__init__()
+        self.parent_menu = parent_menu
 
         self.setWindowTitle("Sistema OLAP - Control de Accesos")
         self.resize(1100, 650)
@@ -68,6 +69,10 @@ class GestionUsuariosApp(QMainWindow):
                 background-color: #c63d3d; color: white;
             }
 
+            QPushButton#BtnVolver {
+                background-color: #e67e22; color: white;
+            }
+
             QTableWidget {
                 background-color: #0d1b2a; border: none; gridline-color: #243447;
                 selection-background-color: #3d85c6; color: white;
@@ -103,7 +108,6 @@ class GestionUsuariosApp(QMainWindow):
 
         self.panel = QFrame()
         self.panel.setObjectName("PanelLateral")
-        self.panel.setFixedWidth(320)
 
         form_layout = QVBoxLayout(self.panel)
         form_layout.setContentsMargins(20, 20, 20, 20)
@@ -169,8 +173,24 @@ class GestionUsuariosApp(QMainWindow):
         self.btn_limpiar.clicked.connect(self.limpiar_formulario)
         form_layout.addWidget(self.btn_limpiar)
 
+        self.btn_volver = QPushButton("Volver al Menú")
+        self.btn_volver.setObjectName("BtnVolver")
+        self.btn_volver.clicked.connect(self.volver_al_menu)
+        form_layout.addWidget(self.btn_volver)
+
         form_layout.addStretch()
-        main_layout.addWidget(self.panel)
+
+        # Envolver el panel en un QScrollArea
+        self.scroll_panel = QScrollArea()
+        self.scroll_panel.setWidgetResizable(True)
+        self.scroll_panel.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_panel.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_panel.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll_panel.setStyleSheet("QScrollArea { border: none; background-color: transparent; }")
+        self.scroll_panel.setFixedWidth(335)
+        self.scroll_panel.setWidget(self.panel)
+
+        main_layout.addWidget(self.scroll_panel)
 
     def validar_campos(self):
         nombre = self.txt_nombre.text().strip()
@@ -380,6 +400,12 @@ class GestionUsuariosApp(QMainWindow):
     def focusInEvent(self, event):
         self.cargar_usuarios_tabla()
         super().focusInEvent(event)
+
+    def volver_al_menu(self):
+        """Vuelve al menú principal"""
+        if self.parent_menu:
+            self.parent_menu.show()
+        self.close()
 
 
 if __name__ == "__main__":

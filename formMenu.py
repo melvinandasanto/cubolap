@@ -1,16 +1,20 @@
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, 
-    QPushButton, QLabel, QFrame, QHBoxLayout
+    QPushButton, QLabel, QFrame, QHBoxLayout, QMessageBox
 )
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
+from SesionGlobal import SesionUsuario
+
 
 class MenuPrincipalOLAP(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.sesion = SesionUsuario()
+        
         self.setWindowTitle("Sistema OLAP - Panel de Control")
-        self.resize(500, 600)
+        self.resize(500, 700)
         
         # Estilo general del menú
         self.setStyleSheet("""
@@ -30,6 +34,11 @@ class MenuPrincipalOLAP(QMainWindow):
                 font-size: 22px;
                 font-weight: bold;
                 color: #3d85c6;
+                margin-bottom: 10px;
+            }
+            QLabel#UsuarioInfo {
+                font-size: 13px;
+                color: #a0aeba;
                 margin-bottom: 20px;
             }
             /* Estilo para los botones del menú */
@@ -47,13 +56,22 @@ class MenuPrincipalOLAP(QMainWindow):
                 background-color: #3d85c6;
                 border: 1px solid #e0e1dd;
             }
-            QPushButton#BtnCerrar {
-                background-color: #c63d3d;
+            QPushButton#BtnCerrarSesion {
+                background-color: #e67e22;
                 border: none;
                 text-align: center;
                 margin-top: 20px;
+                margin-bottom: 10px;
             }
-            QPushButton#BtnCerrar:hover {
+            QPushButton#BtnCerrarSesion:hover {
+                background-color: #f39c12;
+            }
+            QPushButton#BtnCerrarSistema {
+                background-color: #c63d3d;
+                border: none;
+                text-align: center;
+            }
+            QPushButton#BtnCerrarSistema:hover {
                 background-color: #e63946;
             }
         """)
@@ -79,38 +97,101 @@ class MenuPrincipalOLAP(QMainWindow):
         lbl_titulo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout_menu.addWidget(lbl_titulo)
 
+        # Información del usuario
+        lbl_usuario = QLabel(f"Bienvenido: {self.sesion.nombre_usuario} ({self.sesion.nombre_rol})")
+        lbl_usuario.setObjectName("UsuarioInfo")
+        lbl_usuario.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout_menu.addWidget(lbl_usuario)
+
         # --- BOTONES DEL MENÚ ---
         
         # 1. Cargar un archivo
         self.btn_cargar = QPushButton("📁  Cargar un archivo")
+        self.btn_cargar.clicked.connect(self.abrir_formrutas)
         layout_menu.addWidget(self.btn_cargar)
 
         # 2. Añadir nueva conexión
         self.btn_conexion = QPushButton("🌐  Añadir una nueva conexión")
+        self.btn_conexion.clicked.connect(self.abrir_formconexiones)
         layout_menu.addWidget(self.btn_conexion)
 
-        # 3. Añadir usuarios
+        # 3. Añadir usuarios (solo para administradores)
         self.btn_usuarios = QPushButton("👥  Añadir usuarios")
-        layout_menu.addWidget(self.btn_usuarios)
+        self.btn_usuarios.clicked.connect(self.abrir_formusuarios)
+        
+        if self.sesion.es_administrador():
+            layout_menu.addWidget(self.btn_usuarios)
+        else:
+            # Guardar referencia pero no visualizar
+            self.btn_usuarios.setVisible(False)
 
         # 4. Creación de cubo
         self.btn_cubo = QPushButton("🧊  Creación de cubo")
+        self.btn_cubo.clicked.connect(self.abrir_formdatosparacubo)
         layout_menu.addWidget(self.btn_cubo)
 
         # Espacio flexible
         layout_menu.addStretch()
 
-        # Botón de Salir
+        # Botón de Cerrar Sesión
+        self.btn_cerrar_sesion = QPushButton("Cerrar Sesión")
+        self.btn_cerrar_sesion.setObjectName("BtnCerrarSesion")
+        self.btn_cerrar_sesion.clicked.connect(self.cerrar_sesion)
+        layout_menu.addWidget(self.btn_cerrar_sesion)
+
+        # Botón de Salir del Sistema
         self.btn_salir = QPushButton("Cerrar Sistema")
-        self.btn_salir.setObjectName("BtnCerrar")
+        self.btn_salir.setObjectName("BtnCerrarSistema")
         self.btn_salir.clicked.connect(self.close)
         layout_menu.addWidget(self.btn_salir)
 
         main_layout.addWidget(self.frame_menu)
 
-        # --- COMENTARIO PARA CONEXIÓN FUTURA ---
-        # Para conectar usa: self.btn_cargar.clicked.connect(self.tu_funcion)
-        # --------------------------------------
+    def abrir_formrutas(self):
+        """Abre el formulario de carga de archivos"""
+        from formrutas import FormRutas
+        self.form_rutas = FormRutas(self)
+        self.form_rutas.show()
+        self.hide()
+
+    def abrir_formconexiones(self):
+        """Abre el formulario de conexiones"""
+        from formconexiones import AdministradorConexiones
+        self.form_conexiones = AdministradorConexiones(self)
+        self.form_conexiones.show()
+        self.hide()
+
+    def abrir_formusuarios(self):
+        """Abre el formulario de usuarios"""
+        if not self.sesion.es_administrador():
+            QMessageBox.warning(self, "Acceso Denegado", "Solo administradores pueden acceder a esta sección")
+            return
+        
+        from formusuario import GestionUsuariosApp
+        self.form_usuarios = GestionUsuariosApp(self)
+        self.form_usuarios.show()
+        self.hide()
+
+    def abrir_formdatosparacubo(self):
+        """Abre el formulario de selección de datos para cubo"""
+        from formdatosparacubo import SeleccionOrigenOLAP
+        self.form_cubo = SeleccionOrigenOLAP(self)
+        self.form_cubo.show()
+        self.hide()
+
+    def cerrar_sesion(self):
+        """Cierra la sesión actual y vuelve al login"""
+        self.sesion.cerrar_sesion()
+        
+        from formlogin import FormLogin
+        self.login_window = FormLogin()
+        self.login_window.show()
+        self.close()
+
+    def volver_al_menu(self):
+        """Método para que otros forms vuelvan a este menú"""
+        self.show()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

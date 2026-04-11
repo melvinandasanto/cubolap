@@ -12,8 +12,9 @@ from claseconexiones import ClaseConexiones
 
 
 class SeleccionOrigenOLAP(QMainWindow):
-    def __init__(self):
+    def __init__(self, parent_menu=None):
         super().__init__()
+        self.parent_menu = parent_menu
         self.setWindowTitle("Sistema OLAP - Seleccionar Origen de Datos")
         self.resize(1350, 700)
 
@@ -22,7 +23,7 @@ class SeleccionOrigenOLAP(QMainWindow):
 
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #1a2634;
+                background-color: #0d1b2a;
             }
 
             QWidget {
@@ -31,50 +32,58 @@ class SeleccionOrigenOLAP(QMainWindow):
                 font-size: 13px;
             }
 
-            QLabel#TituloPrincipal {
-                font-size: 22px;
+            QLabel#TituloSeccion {
                 font-weight: bold;
-                color: white;
-                margin-bottom: 10px;
-            }
-
-            QLabel#Subtitulo {
-                font-size: 15px;
-                color: #b8c7d9;
-                margin-bottom: 8px;
+                color: #3d85c6;
+                font-size: 14px;
+                text-transform: uppercase;
+                margin-bottom: 5px;
             }
 
             QPushButton {
                 font-weight: bold;
-                border-radius: 8px;
-                padding: 12px;
+                border-radius: 6px;
+                padding: 10px 14px;
             }
 
             QPushButton#BtnTab {
                 background-color: #243447;
                 color: white;
                 border: 1px solid #3a4a5e;
-                min-width: 150px;
+                padding: 8px;
+            }
+
+            QPushButton#BtnTab:hover {
+                background-color: #2f4a5a;
             }
 
             QPushButton#BtnTabActivo {
                 background-color: #3d85c6;
                 color: white;
                 border: 1px solid #5fa2dd;
-                min-width: 150px;
+                padding: 8px;
             }
 
             QPushButton#BtnVistaPrevia {
                 background-color: #3d85c6;
                 color: white;
-                font-size: 15px;
+                font-size: 13px;
+                padding: 12px;
             }
 
-            QPushButton#BtnSalir {
-                background-color: #3e5169;
+            QPushButton#BtnVistaPrevia:hover {
+                background-color: #5fa2dd;
+            }
+
+            QPushButton#BtnVolver {
+                background-color: #e67e22;
                 color: white;
-                border: 1px solid #455a73;
-                font-size: 14px;
+                border: none;
+                padding: 12px;
+            }
+
+            QPushButton#BtnVolver:hover {
+                background-color: #d35400;
             }
 
             QTableWidget {
@@ -83,33 +92,15 @@ class SeleccionOrigenOLAP(QMainWindow):
                 gridline-color: #243447;
                 selection-background-color: #3d85c6;
                 color: white;
-                font-size: 13px;
+                font-size: 12px;
             }
 
             QHeaderView::section {
-                background-color: #1b263b;
-                padding: 12px;
+                background-color: #243447;
+                padding: 10px;
                 border: none;
                 font-weight: bold;
                 color: #3d85c6;
-            }
-
-            QFrame#PanelDetalles {
-                background-color: #243447;
-                border-radius: 15px;
-                border: 1px solid #3a4a5e;
-            }
-
-            QLabel#LabelSeleccion {
-                color: #2ecc71;
-                font-weight: bold;
-                font-size: 15px;
-            }
-
-            QLabel#LabelTipo {
-                color: #7fb3ff;
-                font-weight: bold;
-                font-size: 14px;
             }
         """)
 
@@ -117,42 +108,34 @@ class SeleccionOrigenOLAP(QMainWindow):
         self.mostrar_conexiones()
 
     def init_ui(self):
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        central = QWidget()
+        self.setCentralWidget(central)
 
-        main_layout = QHBoxLayout(central_widget)
-        main_layout.setContentsMargins(25, 25, 25, 25)
-        main_layout.setSpacing(20)
+        layout_principal = QHBoxLayout(central)
+        layout_principal.setSpacing(15)
+        layout_principal.setContentsMargins(20, 20, 20, 20)
 
-        # =========================
-        # PANEL IZQUIERDO
-        # =========================
+        # ========== PANEL IZQUIERDO ==========
         panel_izquierdo = QVBoxLayout()
-        panel_izquierdo.setSpacing(15)
 
-        self.lbl_titulo = QLabel("Seleccione el origen de datos para generar el Cubo OLAP")
-        self.lbl_titulo.setObjectName("TituloPrincipal")
-        panel_izquierdo.addWidget(self.lbl_titulo)
-
-        self.lbl_subtitulo = QLabel("Puede elegir una conexión guardada o una ruta de archivo")
-        self.lbl_subtitulo.setObjectName("Subtitulo")
-        panel_izquierdo.addWidget(self.lbl_subtitulo)
+        # Título
+        lbl_titulo = QLabel("Seleccione el origen")
+        lbl_titulo.setObjectName("TituloSeccion")
+        panel_izquierdo.addWidget(lbl_titulo)
 
         # Botones tipo pestaña
         layout_tabs = QHBoxLayout()
-        layout_tabs.setSpacing(10)
+        layout_tabs.setSpacing(6)
 
         self.btn_conexiones = QPushButton("Conexiones")
         self.btn_conexiones.setObjectName("BtnTabActivo")
         self.btn_conexiones.clicked.connect(self.mostrar_conexiones)
+        layout_tabs.addWidget(self.btn_conexiones)
 
         self.btn_rutas = QPushButton("Rutas")
         self.btn_rutas.setObjectName("BtnTab")
         self.btn_rutas.clicked.connect(self.mostrar_rutas)
-
-        layout_tabs.addWidget(self.btn_conexiones)
         layout_tabs.addWidget(self.btn_rutas)
-        layout_tabs.addStretch()
 
         panel_izquierdo.addLayout(layout_tabs)
 
@@ -161,54 +144,47 @@ class SeleccionOrigenOLAP(QMainWindow):
         self.tabla_origenes.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tabla_origenes.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.tabla_origenes.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.tabla_origenes.setAlternatingRowColors(False)
         self.tabla_origenes.verticalHeader().setVisible(False)
         self.tabla_origenes.itemSelectionChanged.connect(self.actualizar_info_seleccion)
-
         panel_izquierdo.addWidget(self.tabla_origenes)
 
-        main_layout.addLayout(panel_izquierdo, stretch=4)
+        layout_principal.addLayout(panel_izquierdo, 3)
 
-        # =========================
-        # PANEL DERECHO
-        # =========================
-        self.panel_derecho = QFrame()
-        self.panel_derecho.setObjectName("PanelDetalles")
-        self.panel_derecho.setFixedWidth(340)
+        # ========== PANEL DERECHO (DETALLES E INFORMACIÓN) ==========
+        panel_derecho = QVBoxLayout()
 
-        layout_detalles = QVBoxLayout(self.panel_derecho)
-        layout_detalles.setContentsMargins(20, 30, 20, 20)
-        layout_detalles.setSpacing(18)
+        # Información
+        lbl_info = QLabel("INFORMACIÓN")
+        lbl_info.setObjectName("TituloSeccion")
+        panel_derecho.addWidget(lbl_info)
 
-        titulo_detalle = QLabel("DETALLES DE SELECCIÓN")
-        titulo_detalle.setStyleSheet("font-size: 16px; font-weight: bold;")
-        layout_detalles.addWidget(titulo_detalle)
-
-        self.lbl_tipo = QLabel("Tipo actual: Conexiones")
-        self.lbl_tipo.setObjectName("LabelTipo")
+        self.lbl_tipo = QLabel("Tipo: Conexiones")
+        self.lbl_tipo.setStyleSheet("font-weight: bold; color: #7fb3ff; font-size: 13px;")
         self.lbl_tipo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout_detalles.addWidget(self.lbl_tipo)
+        panel_derecho.addWidget(self.lbl_tipo)
 
         self.lbl_info_db = QLabel("Ningún origen seleccionado")
-        self.lbl_info_db.setObjectName("LabelSeleccion")
+        self.lbl_info_db.setStyleSheet("color: #a0aeba; font-size: 12px; margin-top: 10px;")
         self.lbl_info_db.setWordWrap(True)
         self.lbl_info_db.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout_detalles.addWidget(self.lbl_info_db)
+        panel_derecho.addWidget(self.lbl_info_db)
 
-        layout_detalles.addSpacing(20)
+        panel_derecho.addSpacing(20)
 
-        self.btn_vista_previa = QPushButton("Ir a Vista Previa")
+        # Botones de acción
+        self.btn_vista_previa = QPushButton("→ Ir a Vista Previa")
         self.btn_vista_previa.setObjectName("BtnVistaPrevia")
         self.btn_vista_previa.clicked.connect(self.abrir_vista_previa)
-        layout_detalles.addWidget(self.btn_vista_previa)
+        panel_derecho.addWidget(self.btn_vista_previa)
 
-        self.btn_salir = QPushButton("Salir")
-        self.btn_salir.setObjectName("BtnSalir")
-        self.btn_salir.clicked.connect(self.close)
-        layout_detalles.addWidget(self.btn_salir)
+        self.btn_volver = QPushButton("Volver al Menú")
+        self.btn_volver.setObjectName("BtnVolver")
+        self.btn_volver.clicked.connect(self.volver_al_menu)
+        panel_derecho.addWidget(self.btn_volver)
 
-        layout_detalles.addStretch()
-        main_layout.addWidget(self.panel_derecho)
+        panel_derecho.addStretch()
+
+        layout_principal.addLayout(panel_derecho, 1)
 
     # =========================================================
     # CAMBIO DE PESTAÑA
@@ -364,13 +340,20 @@ class SeleccionOrigenOLAP(QMainWindow):
         try:
             self.nueva_ventana = VistaPreviaDinamica( 
                 tipo_origen=self.tipo_origen_actual,
-                id_origen=int(self.id_seleccionado)
+                id_origen=int(self.id_seleccionado),
+                parent_menu=self
             )
             self.nueva_ventana.show()
             self.hide()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo abrir la vista previa.\n\n{str(e)}")
+
+    def volver_al_menu(self):
+        """Vuelve al menú principal"""
+        if self.parent_menu:
+            self.parent_menu.show()
+        self.close()
 
 
 if __name__ == "__main__":
