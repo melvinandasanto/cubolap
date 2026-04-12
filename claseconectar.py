@@ -4,7 +4,7 @@ import mysql.connector
 
 class Conectar:
     DEFAULT_GESTOR = "sqlserver"
-    DEFAULT_HOST = "localhost\\SQLEXPRESS"
+    DEFAULT_HOST = "localhost"
     DEFAULT_DATABASE = "cubolap"
     DEFAULT_TIMEOUT = 5
 

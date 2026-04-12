@@ -28,7 +28,7 @@ class FormLogin(QMainWindow):
                 background-color: {self.entry_bg};
                 color: white;
                 border: 1px solid #3d85c6;
-                border-radius: 5px;
+                border-radius: 8px;
                 padding: 10px;
                 font-size: 12px;
             }}
@@ -36,13 +36,13 @@ class FormLogin(QMainWindow):
                 background-color: {self.btn_color};
                 color: white;
                 border: none;
-                border-radius: 5px;
+                border-radius: 8px;
                 padding: 12px;
                 font-weight: bold;
                 font-size: 14px;
             }}
             QPushButton:hover {{
-                background-color: #5fa2dd;
+                background-color: #3374ad;
             }}
         """)
         
@@ -91,6 +91,20 @@ class FormLogin(QMainWindow):
         
         # Botón Iniciar Sesión
         self.btn_login = QPushButton("Iniciar Sesión")
+        self.btn_login.setStyleSheet("""
+            QPushButton {
+                background-color: #3d85c6;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #3374ad;
+            }
+        """)
         self.btn_login.clicked.connect(self.iniciar_sesion)
         container_layout.addWidget(self.btn_login)
         
@@ -107,12 +121,56 @@ class FormLogin(QMainWindow):
         
         auth = Autenticacion(
             gestor="sqlserver",
-            host="PC1\\SQLEXPRESS",
+            host="localhost",
             database="cubolap"
         )
 
-        if auth.login(usuario, contrasena):
-            messagebox.showinfo("Éxito", "Inicio de sesión correcto ✅")
+        resultado_login = auth.login(usuario, contrasena)
+        
+        if resultado_login:
+            # Login exitoso - registrar en sesión global
+            sesion = SesionUsuario()
+            sesion.iniciar_sesion(
+                id_usuario=resultado_login['id'],
+                nombre_usuario=resultado_login['nombre'],
+                id_rol=resultado_login['id_rol'],
+                nombre_rol=resultado_login['nombre_rol'],
+                activo=resultado_login.get('activo', True)
+            )
+            
+            QMessageBox.information(self, "Éxito", "Inicio de sesión correcto ✅")
+            
+            # Verificar si es el usuario default
+            if usuario == "default":
+                # Si solo existe default, abrir formulario de usuarios
+                if auth.solo_existe_default():
+                    self.abrir_gestion_usuarios()
+                else:
+                    # Si hay otros usuarios, ir al menú
+                    self.abrir_menu_principal()
+            else:
+                # Si es otro usuario, abrir menú
+                self.abrir_menu_principal()
         else:
-            messagebox.showerror("Error", "Usuario o contraseña incorrectos ❌")
+            QMessageBox.critical(self, "Error", "Usuario o contraseña incorrectos ❌")
+    
+    def abrir_menu_principal(self):
+        """Abre el menú principal del sistema"""
+        try:
+            from formMenu import MenuPrincipalOLAP
+            self.menu = MenuPrincipalOLAP()
+            self.menu.show()
+            self.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al abrir el menú: {str(e)}")
+    
+    def abrir_gestion_usuarios(self):
+        """Abre el formulario de gestión de usuarios para crear el primer usuario"""
+        try:
+            from formusuario import GestionUsuariosApp
+            self.gestion_usuarios = GestionUsuariosApp(parent_menu=None, es_primera_inicializacion=True)
+            self.gestion_usuarios.show()
+            self.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al abrir gestión de usuarios: {str(e)}")
 

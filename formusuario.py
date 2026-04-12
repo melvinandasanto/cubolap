@@ -8,26 +8,44 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 from formrol import FormRol
-
-# Aquí deberías importar tu clase de lógica, por ejemplo:
-# from datos.clase_usuarios import ClaseUsuarios
+from claseusuario import Usuario
+from claseLogin import Autenticacion
+from claserol import ClaseRol
+from SesionGlobal import SesionUsuario
 
 class GestionUsuariosApp(QMainWindow):
-    def __init__(self, parent_menu=None):
+    def __init__(self, parent_menu=None, es_primera_inicializacion=False):
         super().__init__()
         self.parent_menu = parent_menu
+        self.es_primera_inicializacion = es_primera_inicializacion
 
         self.setWindowTitle("Sistema OLAP - Control de Accesos")
         self.resize(1100, 650)
         
+        # Verificar permisos (solo si NO es primera inicialización)
+        if not es_primera_inicializacion:
+            sesion = SesionUsuario()
+            if not sesion.es_administrador():
+                QMessageBox.critical(
+                    self,
+                    "Acceso Denegado",
+                    "Solo los administradores pueden acceder a la gestión de usuarios."
+                )
+                self.close()
+                return
+        
         # Variable para controlar el ID (puedes obtener el último de tu BD)
         self.proximo_id = 1 
+        
+        # Diccionario para mapear nombres de rol a IDs
+        self.rol_map = {}
         
         # Instancia de tu clase de conexión/lógica
         # self.logica = ClaseUsuarios()
 
         self.iniciar_estilos()
         self.iniciar_gui()
+        self.cargar_roles_desde_bd()
 
     def iniciar_estilos(self):
         self.setStyleSheet("""
@@ -154,7 +172,6 @@ class GestionUsuariosApp(QMainWindow):
 
         form_layout.addWidget(QLabel("Rol:"))
         self.cb_rol = QComboBox()
-        self.cb_rol.addItems(["Admin", "Analista", "Visualizadora"])
         form_layout.addWidget(self.cb_rol)
 
         form_layout.addWidget(QLabel("Contraseña:"))
@@ -198,53 +215,73 @@ class GestionUsuariosApp(QMainWindow):
         form_layout.addStretch()
         main_layout.addWidget(scroll_area, stretch=1)
 
-    def validar_campos(self):
-        nombre = self.txt_nombre.text().strip()
-        contrasenia = self.txt_contrasenia.text().strip()
-        es_edicion = self.txt_id.text().strip() != ""
+    def cargar_roles_desde_bd(self):
+        """Carga los roles desde la tabla rol de la BD y llena el ComboBox"""
+        try:
+            clase_rol = ClaseRol()
+            roles = clase_rol.Listar()
+            
+            if roles:
+                # Limpiar ComboBox
+                self.cb_rol.clear()
+                
+                # Agregar roles y crear mapeo
+                for idrol, nombrerol in roles:
+                    self.cb_rol.addItem(nombrerol)
+                    self.rol_map[nombrerol] = idrol
+            else:
+                QMessageBox.warning(self, "Aviso", "No hay roles disponibles en la base de datos.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al cargar roles: {str(e)}")
+        
+        # Cargar usuarios después de cargar roles
+        self.cargar_usuarios_desde_bd()
 
-        if not nombre:
-            QMessageBox.warning(self, "Validación", "El nombre de usuario es obligatorio.")
-            self.txt_nombre.setFocus()
-            return False
+    def cargar_usuarios_desde_bd(self):
+        """Carga los usuarios desde la BD y muestra en la tabla. Respeta permisos."""
+        try:
+            sesion = SesionUsuario()
+            es_admin = sesion.es_administrador()
+            
+            usuario_obj = Usuario()
+            usuarios = usuario_obj.Listar()
+            
+            self.table.setRowCount(0)
+            
+            if usuarios:
+                for idusuario, nombre, idrol, nombrerol, activo in usuarios:
+                    row = self.table.rowCount()
+                    self.table.insertRow(row)
+                    
+                    # ID
+                    self.table.setItem(row, 0, QTableWidgetItem(str(idusuario)))
+                    
+                    # Nombre
+                    self.table.setItem(row, 1, QTableWidgetItem(nombre))
+                    
+                    # Rol
+                    self.table.setItem(row, 2, QTableWidgetItem(nombrerol or "Sin Rol"))
+                    
+                    # Estado
+                    estado_texto = "Activo" if activo else "Inactivo"
+                    self.table.setItem(row, 3, QTableWidgetItem(estado_texto))
+                    
+                    # Contraseña - solo admin puede ver
+                    if es_admin:
+                        self.table.setItem(row, 4, QTableWidgetItem("*" * 5))
+                    else:
+                        self.table.setItem(row, 4, QTableWidgetItem("***"))
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al cargar usuarios: {str(e)}")
 
-        if not es_edicion and not contrasenia:
-            QMessageBox.warning(self, "Validación", "La contraseña es obligatoria.")
-            self.txt_contrasenia.setFocus()
-            return False
-
-        return True
-
-    def cargar_estados(self):
-        self.estado_actual = 1
-
-    def obtener_usuario_desde_formulario(self):
-        texto_id = self.txt_id.text().strip()
-
-        self.usuario.IdUsuario = int(texto_id) if texto_id.isdigit() else None
-        self.usuario.Nombre = self.txt_nombre.text().strip()
-
-        contrasenia = self.txt_contrasenia.text().strip()
-        self.usuario.Contrasenia = contrasenia if contrasenia else None
-        self.usuario.Activo = self.estado_actual
-
-    def limpiar_formulario(self):
+    def nuevo_registro(self):
         self.txt_id.clear()
         self.txt_nombre.clear()
-        self.txt_rol.clear()
-        self.txt_contrasenia.clear()
-        self.txt_contrasenia.setPlaceholderText("")
-        self.txt_estado.setText("Activo")
-        self.estado_actual = 1
+        self.txt_pass.clear()
+        self.txt_pass.setPlaceholderText("")
+        self.cb_rol.setCurrentIndex(0)
+        self.cb_estado.setCurrentIndex(0)
         self.table.clearSelection()
-
-    def cambiar_estado(self):
-        if self.estado_actual == 1:
-            self.estado_actual = 0
-            self.txt_estado.setText("Inactivo")
-        else:
-            self.estado_actual = 1
-            self.txt_estado.setText("Activo")
 
     def cargar_datos_al_formulario(self, item):
         row = item.row()
@@ -254,59 +291,206 @@ class GestionUsuariosApp(QMainWindow):
         self.cb_estado.setCurrentText(self.table.item(row, 3).text())
         self.txt_pass.setPlaceholderText("Dejar vacío para no cambiar")
 
-    def nuevo_registro(self):
-        self.txt_id.setText(str(self.proximo_id))
-        self.txt_nombre.clear()
-        self.txt_pass.clear()
-        self.txt_pass.setPlaceholderText("")
-        self.cb_rol.setCurrentIndex(0)
-        self.cb_estado.setCurrentIndex(0)
-        self.table.clearSelection()
+    def validar_campos(self):
+        nombre = self.txt_nombre.text().strip()
+        contrasenia = self.txt_pass.text().strip()
+        es_edicion = self.txt_id.text().strip() != ""
+
+        if not nombre:
+            QMessageBox.warning(self, "Validación", "El nombre de usuario es obligatorio.")
+            self.txt_nombre.setFocus()
+            return False
+
+        if not es_edicion and not contrasenia:
+            QMessageBox.warning(self, "Validación", "La contraseña es obligatoria.")
+            self.txt_pass.setFocus()
+            return False
+
+        return True
 
     # --- Métodos para conectar con tu Clase ---
     def guardar_usuario(self):
-        if not self.txt_nombre.text():
-            self.mostrar_mensaje("Error", "El nombre es obligatorio.", QMessageBox.Icon.Warning)
+        """Guarda un nuevo usuario en la base de datos"""
+        nombre = self.txt_nombre.text().strip()
+        contrasenia = self.txt_pass.text().strip()
+        rol_texto = self.cb_rol.currentText()
+        activo = 1 if self.cb_estado.currentText() == "Activo" else 0
+        
+        # Validar campos
+        if not nombre:
+            QMessageBox.warning(self, "Validación", "El nombre de usuario es obligatorio.")
+            self.txt_nombre.setFocus()
             return
         
-        # 1. Llamar a tu clase: self.logica.insertar(self.txt_nombre.text(), ...)
-        # 2. Refrescar tabla o agregar localmente:
-        self.agregar_fila_tabla(self.txt_id.text(), self.txt_nombre.text(), 
-                               self.cb_rol.currentText(), self.cb_estado.currentText())
+        if not contrasenia:
+            QMessageBox.warning(self, "Validación", "La contraseña es obligatoria.")
+            self.txt_pass.setFocus()
+            return
         
-        self.proximo_id += 1
-        self.mostrar_mensaje("Éxito", "Usuario guardado en el sistema.")
-        self.nuevo_registro()
+        try:
+            # Obtener el nombre del rol seleccionado
+            rol_texto = self.cb_rol.currentText()
+            
+            # Buscar el ID del rol en el diccionario
+            idrol = self.rol_map.get(rol_texto, 1)
+            
+            # Crear instancia de Usuario y guardar
+            nuevo_usuario = Usuario(
+                nombre=nombre,
+                contrasenia=contrasenia,
+                idrol=idrol,
+                activo=activo
+            )
+            
+            if nuevo_usuario.Guardar():
+                QMessageBox.information(self, "Éxito", f"Usuario '{nombre}' guardado correctamente.")
+                
+                # SOLO mostrar mensaje de primera inicialización si estamos en modo inicial
+                if self.es_primera_inicializacion:
+                    # Verificar si el usuario creado es admin y si solo existía default
+                    auth = Autenticacion(
+                        gestor="sqlserver",
+                        host="localhost",
+                        database="cubolap"
+                    )
+                    
+                    # Si ya no solo existe default, abrir el menú principal
+                    if not auth.solo_existe_default():
+                        QMessageBox.information(
+                            self,
+                            "Primer Usuario Creado",
+                            "El usuario default ha sido desactivado automáticamente.\n\nBienvenido al sistema."
+                        )
+                        self.abrir_menu_principal()
+                    else:
+                        # Recargar tabla y limpiar formulario
+                        self.cargar_usuarios_desde_bd()
+                        self.nuevo_registro()
+                else:
+                    # Modo normal: solo recargar tabla
+                    self.cargar_usuarios_desde_bd()
+                    self.nuevo_registro()
+            else:
+                QMessageBox.critical(self, "Error", "No se pudo guardar el usuario en la base de datos.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al guardar usuario: {str(e)}")
+
+    def abrir_menu_principal(self):
+        """Abre el menú principal del sistema"""
+        try:
+            from formMenu import MenuPrincipalOLAP
+            self.menu = MenuPrincipalOLAP()
+            self.menu.show()
+            self.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al abrir el menú: {str(e)}")
 
     def editar_usuario(self):
+        """Actualiza un usuario en la base de datos"""
         selected = self.table.currentRow()
-        if selected >= 0:
-            # 1. Llamar a tu clase: self.logica.actualizar(self.txt_id.text(), ...)
-            # 2. Actualizar tabla visual:
-            self.table.setItem(selected, 1, QTableWidgetItem(self.txt_nombre.text()))
-            self.table.setItem(selected, 2, QTableWidgetItem(self.cb_rol.currentText()))
-            self.table.setItem(selected, 3, QTableWidgetItem(self.cb_estado.currentText()))
-            self.mostrar_mensaje("Sistema", "Usuario actualizado correctamente.")
-        else:
-            self.mostrar_mensaje("Aviso", "Seleccione un usuario de la lista.", QMessageBox.Icon.Warning)
+        
+        if selected < 0:
+            QMessageBox.warning(self, "Aviso", "Seleccione un usuario de la lista para editar.")
+            return
+        
+        try:
+            # Obtener ID del usuario seleccionado
+            idusuario = int(self.txt_id.text())
+            nombre = self.txt_nombre.text().strip()
+            contrasenia = self.txt_pass.text().strip()
+            rol_texto = self.cb_rol.currentText()
+            activo = 1 if self.cb_estado.currentText() == "Activo" else 0
+            
+            # Validar campos
+            if not nombre:
+                QMessageBox.warning(self, "Validación", "El nombre de usuario es obligatorio.")
+                self.txt_nombre.setFocus()
+                return
+            
+            # Debug: mostrar datos
+            print(f"DEBUG - ID: {idusuario}, Nombre: {nombre}, Rol: {rol_texto}, Activo: {activo}, Contraseña vacía: {not contrasenia}")
+            
+            # Crear instancia de Usuario y buscarlo para obtener datos actuales
+            usuario = Usuario()
+            
+            # Buscar usuario actual para obtener la contraseña (si no se está cambiando)
+            if usuario.Buscar(idusuario):
+                print(f"DEBUG - Usuario encontrado: {usuario.nombre}")
+                
+                # Si no se ingresó contraseña nueva, mantener la actual
+                if not contrasenia:
+                    contrasenia = usuario.contrasenia
+                    print(f"DEBUG - Usando contraseña actual")
+                
+                # Actualizar datos
+                usuario.nombre = nombre
+                usuario.contrasenia = contrasenia
+                
+                # Obtener ID del rol
+                idrol = self.rol_map.get(rol_texto, 1)
+                usuario.idrol = idrol
+                usuario.activo = activo
+                
+                print(f"DEBUG - Datos a actualizar: Nombre={usuario.nombre}, Rol={idrol}, Activo={usuario.activo}")
+                
+                # Guardar cambios en la BD
+                resultado = usuario.Editar()
+                print(f"DEBUG - Resultado de Editar(): {resultado}")
+                
+                if resultado:
+                    QMessageBox.information(self, "Éxito", f"Usuario '{nombre}' actualizado correctamente.")
+                    # Recargar tabla y limpiar formulario
+                    self.cargar_usuarios_desde_bd()
+                    self.nuevo_registro()
+                else:
+                    QMessageBox.critical(self, "Error", "No se pudo actualizar el usuario en la base de datos.")
+            else:
+                print(f"DEBUG - Usuario NO encontrado con ID: {idusuario}")
+                QMessageBox.critical(self, "Error", "No se encontró el usuario en la base de datos.")
+                
+        except ValueError:
+            QMessageBox.critical(self, "Error", "ID de usuario inválido.")
+        except Exception as e:
+            print(f"DEBUG - Excepción: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Error al actualizar usuario: {str(e)}")
 
     def eliminar_usuario(self):
+        """Elimina un usuario de la base de datos"""
         selected = self.table.currentRow()
-        if selected >= 0:
-            # 1. Llamar a tu clase: self.logica.eliminar(self.txt_id.text())
-            # 2. Quitar de la tabla visual:
-            self.table.removeRow(selected)
-            self.nuevo_registro()
-            self.mostrar_mensaje("Sistema", "Usuario eliminado.")
-        else:
-            idusuario = None
-            nombre_usuario = "Usuario sin seleccionar"
-
-        self.ventana_roles = FormRol(idusuario, nombre_usuario)
-        self.ventana_roles.show()
+        
+        if selected < 0:
+            QMessageBox.warning(self, "Aviso", "Seleccione un usuario de la lista para eliminar.")
+            return
+        
+        # Confirmar eliminación
+        respuesta = QMessageBox.question(
+            self,
+            "Confirmar Eliminación",
+            f"¿Está seguro de que desea eliminar al usuario '{self.txt_nombre.text()}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if respuesta != QMessageBox.StandardButton.Yes:
+            return
+        
+        try:
+            idusuario = int(self.txt_id.text())
+            
+            # Eliminar usuario de la BD
+            usuario = Usuario()
+            if usuario.Eliminar(idusuario):
+                QMessageBox.information(self, "Éxito", "Usuario eliminado correctamente.")
+                # Recargar tabla y limpiar formulario
+                self.cargar_usuarios_desde_bd()
+                self.nuevo_registro()
+            else:
+                QMessageBox.critical(self, "Error", "No se pudo eliminar el usuario de la base de datos.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error al eliminar usuario: {str(e)}")
 
     def focusInEvent(self, event):
-        self.cargar_usuarios_tabla()
+        """Recarga la tabla de usuarios cuando la ventana gana el foco"""
+        self.cargar_usuarios_desde_bd()
         super().focusInEvent(event)
 
     def volver_al_menu(self):

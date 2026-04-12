@@ -107,18 +107,27 @@ class MenuPrincipalOLAP(QMainWindow):
         
         # 1. Cargar un archivo
         self.btn_cargar = QPushButton("📁  Cargar un archivo")
+        self.btn_cargar.clicked.connect(self.abrir_formrutas)
         layout_menu.addWidget(self.btn_cargar)
 
         # 2. Añadir nueva conexión
         self.btn_conexion = QPushButton("🌐  Añadir una nueva conexión")
+        self.btn_conexion.clicked.connect(self.abrir_formconexiones)
         layout_menu.addWidget(self.btn_conexion)
 
         # 3. Añadir usuarios
         self.btn_usuarios = QPushButton("👥  Añadir usuarios")
+        self.btn_usuarios.clicked.connect(self.abrir_formusuarios)
         layout_menu.addWidget(self.btn_usuarios)
+
+        # 4. Añadir roles
+        self.btn_rol = QPushButton("🏷️  Añadir roles")
+        self.btn_rol.clicked.connect(self.abrir_formrol)
+        layout_menu.addWidget(self.btn_rol)
 
         # 4. Creación de cubo
         self.btn_cubo = QPushButton("🧊  Creación de cubo")
+        self.btn_cubo.clicked.connect(self.abrir_formdatosparacubo)
         layout_menu.addWidget(self.btn_cubo)
 
         # Espacio flexible
@@ -168,6 +177,13 @@ class MenuPrincipalOLAP(QMainWindow):
         from formdatosparacubo import SeleccionOrigenOLAP
         self.form_cubo = SeleccionOrigenOLAP(self)
         self.form_cubo.show()
+        self.hide()
+
+    def abrir_formrol(self):
+        """Abre el formulario de carga de archivos"""
+        from formrol import FormRol
+        self.form_rol = FormRol(self)
+        self.form_rol.show()
         self.hide()
 
     def cerrar_sesion(self):
