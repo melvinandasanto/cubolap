@@ -2,9 +2,12 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
     QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
-    QPushButton, QHeaderView, QFrame, QLineEdit, QMessageBox
+    QPushButton, QHeaderView, QFrame, QLineEdit, QMessageBox, QComboBox,
+    QScrollArea
 )
 from PyQt6.QtCore import Qt
+
+from formrol import FormRol
 
 # Aquí deberías importar tu clase de lógica, por ejemplo:
 # from datos.clase_usuarios import ClaseUsuarios
@@ -55,16 +58,39 @@ class GestionUsuariosApp(QMainWindow):
                 border-radius: 5px; padding: 8px; margin-bottom: 12px; color: white;
             }
 
+            QPushButton {
+                min-height: 44px;
+                padding: 6px 10px;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 600;
+                color: white;
+            }
+
             QPushButton#BtnPrincipal {
-                background-color: #3d85c6; color: white;
+                background-color: #3d85c6;
             }
 
             QPushButton#BtnAccion {
-                background-color: #3e5169; color: white; border: 1px solid #455a73;
+                background-color: #3e5169;
+                border: 1px solid #455a73;
             }
 
             QPushButton#BtnEliminar {
-                background-color: #c63d3d; color: white;
+                background-color: #c63d3d;
+            }
+
+            QPushButton#BtnVolver {
+                background-color: #5c6b88;
+                border: 1px solid #4a5a74;
+            }
+
+            QPushButton:hover {
+                background-color: #5589c9;
+            }
+
+            QPushButton:pressed {
+                background-color: #2e5e9b;
             }
 
             QTableWidget {
@@ -101,7 +127,13 @@ class GestionUsuariosApp(QMainWindow):
         # --- FORMULARIO (DERECHA) ---
         self.panel = QFrame()
         self.panel.setObjectName("PanelLateral")
-        self.panel.setFixedWidth(320)
+        self.panel.setMinimumWidth(360)
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setWidget(self.panel)
 
         form_layout = QVBoxLayout(self.panel)
         form_layout.setContentsMargins(20, 20, 20, 20)
@@ -164,7 +196,7 @@ class GestionUsuariosApp(QMainWindow):
         form_layout.addWidget(self.btn_volver)
 
         form_layout.addStretch()
-        main_layout.addWidget(self.panel)
+        main_layout.addWidget(scroll_area, stretch=1)
 
     def validar_campos(self):
         nombre = self.txt_nombre.text().strip()
@@ -276,6 +308,12 @@ class GestionUsuariosApp(QMainWindow):
     def focusInEvent(self, event):
         self.cargar_usuarios_tabla()
         super().focusInEvent(event)
+
+    def volver_al_menu(self):
+        """Vuelve al menú principal"""
+        if self.parent_menu:
+            self.parent_menu.show()
+        self.close()
 
 
 if __name__ == "__main__":

@@ -2,140 +2,108 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
     QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
-    QPushButton, QHeaderView, QFrame, QLineEdit, QMessageBox, QDialog
+    QPushButton, QHeaderView, QFrame, QLineEdit, QMessageBox
 )
 from PyQt6.QtCore import Qt
-from claserol import Rol
-
-
-class DialogoAgregarRol(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Agregar Rol")
-        self.setFixedSize(360, 180)
-
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #243447;
-                color: white;
-                font-family: 'Segoe UI';
-            }
-            QLabel {
-                color: white;
-                font-size: 13px;
-            }
-            QLineEdit {
-                background-color: #304156;
-                border: 1px solid #455a73;
-                border-radius: 5px;
-                padding: 10px;
-                color: white;
-            }
-            QPushButton {
-                font-weight: bold;
-                border-radius: 5px;
-                padding: 10px;
-            }
-            QPushButton#BtnGuardar {
-                background-color: #3d85c6;
-                color: white;
-            }
-            QPushButton#BtnCancelar {
-                background-color: #3e5169;
-                color: white;
-                border: 1px solid #455a73;
-            }
-        """)
-
-        layout = QVBoxLayout(self)
-
-        layout.addWidget(QLabel("Nombre del rol:"))
-
-        self.txt_nombre = QLineEdit()
-        self.txt_nombre.setPlaceholderText("Ejemplo: Aseadora")
-        layout.addWidget(self.txt_nombre)
-
-        botones = QHBoxLayout()
-
-        self.btn_guardar = QPushButton("Guardar")
-        self.btn_guardar.setObjectName("BtnGuardar")
-        self.btn_guardar.clicked.connect(self.accept)
-        botones.addWidget(self.btn_guardar)
-
-        self.btn_cancelar = QPushButton("Cancelar")
-        self.btn_cancelar.setObjectName("BtnCancelar")
-        self.btn_cancelar.clicked.connect(self.reject)
-        botones.addWidget(self.btn_cancelar)
-
-        layout.addLayout(botones)
-
-    def obtener_nombre_rol(self):
-        return self.txt_nombre.text().strip()
+from claserol import ClaseRol
 
 
 class FormRol(QMainWindow):
-    def __init__(self, idusuario=None, nombre_usuario="Usuario sin seleccionar"):
+    def __init__(self, parent_menu=None):
         super().__init__()
+        self.parent_menu = parent_menu
+        self.setWindowTitle("Sistema de Roles")
+        self.resize(1050, 620)
 
-        self.idusuario = idusuario
-        self.nombre_usuario = nombre_usuario
-        self.rol = Rol()
+        self.rol = ClaseRol()
         self.id_rol_seleccionado = None
 
-        self.setWindowTitle("Gestión de Roles")
-        self.resize(1000, 620)
-
         self.iniciar_estilos()
-        self.iniciar_gui()
 
-        self.rol.CrearRolesPredeterminados()
-        self.cargar_roles_tabla()
-        self.limpiar_formulario()
+        self.central = QWidget()
+        self.setCentralWidget(self.central)
+
+        self.layout_principal = QHBoxLayout()
+        self.layout_principal.setContentsMargins(24, 24, 24, 24)
+        self.layout_principal.setSpacing(20)
+        self.central.setLayout(self.layout_principal)
+
+        self.crear_interfaz()
+        self.cargar_roles()
 
     def iniciar_estilos(self):
         self.setStyleSheet("""
-            QMainWindow { background-color: #1a2634; }
-            QWidget { color: white; font-family: 'Segoe UI'; }
+            QMainWindow {
+                background-color: #1a2634;
+            }
 
-            QMessageBox { background-color: #243447; }
-            QMessageBox QLabel { color: white; font-size: 14px; }
+            QWidget {
+                color: white;
+                font-family: 'Segoe UI';
+                font-size: 13px;
+            }
+
+            QFrame#PanelTabla {
+                background-color: #142131;
+                border: 1px solid #24384f;
+                border-radius: 18px;
+            }
 
             QFrame#PanelLateral {
                 background-color: #243447;
-                border-radius: 15px;
+                border-radius: 18px;
                 border: 1px solid #3a4a5e;
+            }
+
+            QLabel#TituloPrincipal {
+                font-size: 24px;
+                font-weight: 700;
+                color: white;
+            }
+
+            QLabel#Subtitulo {
+                font-size: 13px;
+                color: #a8bfd6;
+                margin-bottom: 10px;
             }
 
             QLabel#TituloSeccion {
                 font-size: 18px;
                 font-weight: bold;
                 color: #3d85c6;
-                margin-bottom: 15px;
+                margin-bottom: 10px;
+            }
+
+            QLabel#Etiqueta {
+                font-size: 13px;
+                color: #dce8f5;
+                margin-top: 2px;
             }
 
             QLineEdit {
                 background-color: #304156;
-                border: 1px solid #455a73;
-                border-radius: 5px;
-                padding: 10px;
                 color: white;
-                margin-bottom: 12px;
-            }
-
-            QLineEdit:read-only {
-                background-color: #1b263b;
-                color: #8ea1b4;
+                border: 1px solid #455a73;
+                border-radius: 8px;
+                padding: 10px;
+                font-size: 13px;
             }
 
             QPushButton {
                 font-weight: bold;
-                border-radius: 5px;
+                border-radius: 8px;
                 padding: 12px;
+                font-size: 13px;
+                border: none;
             }
 
             QPushButton#BtnPrincipal {
                 background-color: #3d85c6;
                 color: white;
+            }
+
+            QPushButton#BtnPrincipal:hover {
+                background-color: #3374ad;
             }
 
             QPushButton#BtnAccion {
@@ -144,228 +112,237 @@ class FormRol(QMainWindow):
                 border: 1px solid #455a73;
             }
 
+            QPushButton#BtnAccion:hover {
+                background-color: #4a607c;
+            }
+
             QPushButton#BtnEliminar {
                 background-color: #c63d3d;
                 color: white;
             }
 
+            QPushButton#BtnEliminar:hover {
+                background-color: #aa3333;
+            }
+
             QTableWidget {
                 background-color: #0d1b2a;
+                color: white;
                 border: none;
+                border-radius: 12px;
                 gridline-color: #243447;
                 selection-background-color: #3d85c6;
-                color: white;
+                font-size: 12px;
             }
 
             QHeaderView::section {
                 background-color: #1b263b;
+                color: #3d85c6;
                 padding: 12px;
                 border: none;
                 font-weight: bold;
-                color: #3d85c6;
+            }
+
+            QMessageBox {
+                background-color: #243447;
+            }
+
+            QMessageBox QLabel {
+                color: white;
+                font-size: 14px;
+            }
+
+            QMessageBox QPushButton {
+                background-color: #3d85c6;
+                color: white;
+                border-radius: 5px;
+                padding: 6px 14px;
+                min-width: 80px;
             }
         """)
 
-    def iniciar_gui(self):
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        main_layout = QHBoxLayout(central_widget)
-        main_layout.setContentsMargins(25, 25, 25, 25)
+    def crear_interfaz(self):
+        panel_tabla = QFrame()
+        panel_tabla.setObjectName("PanelTabla")
+        layout_tabla = QVBoxLayout(panel_tabla)
+        layout_tabla.setContentsMargins(22, 22, 22, 22)
+        layout_tabla.setSpacing(12)
 
-        left_layout = QVBoxLayout()
+        titulo = QLabel("GESTIÓN DE ROLES")
+        titulo.setObjectName("TituloPrincipal")
+        layout_tabla.addWidget(titulo)
 
-        lbl_lista = QLabel("Listado de Roles")
-        lbl_lista.setStyleSheet("font-size: 20px; font-weight: bold; margin-bottom: 10px;")
-        left_layout.addWidget(lbl_lista)
+        subtitulo = QLabel("Crea, edita o elimina roles como Aseadora, Supervisor, Cajero o similares.")
+        subtitulo.setObjectName("Subtitulo")
+        layout_tabla.addWidget(subtitulo)
 
-        self.table = QTableWidget()
-        self.table.setColumnCount(2)
-        self.table.setHorizontalHeaderLabels(["ID", "Nombre del Rol"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.itemClicked.connect(self.cargar_datos_al_formulario)
-        left_layout.addWidget(self.table)
+        lbl_tabla = QLabel("Roles registrados")
+        lbl_tabla.setObjectName("Etiqueta")
+        layout_tabla.addWidget(lbl_tabla)
 
-        main_layout.addLayout(left_layout, stretch=2)
+        self.tabla = QTableWidget()
+        self.tabla.setColumnCount(2)
+        self.tabla.setHorizontalHeaderLabels(["ID", "Nombre del Rol"])
+        self.tabla.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tabla.verticalHeader().setVisible(False)
+        self.tabla.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.tabla.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.tabla.cellClicked.connect(self.seleccionar_rol)
+        layout_tabla.addWidget(self.tabla)
 
-        self.panel = QFrame()
-        self.panel.setObjectName("PanelLateral")
-        self.panel.setFixedWidth(340)
+        self.layout_principal.addWidget(panel_tabla, stretch=2)
 
-        form_layout = QVBoxLayout(self.panel)
-        form_layout.setContentsMargins(20, 20, 20, 20)
+        panel_lateral = QFrame()
+        panel_lateral.setObjectName("PanelLateral")
+        panel_lateral.setFixedWidth(340)
 
-        lbl_tit = QLabel("ASIGNACIÓN DE ROL")
-        lbl_tit.setObjectName("TituloSeccion")
-        lbl_tit.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        form_layout.addWidget(lbl_tit)
+        layout_lateral = QVBoxLayout(panel_lateral)
+        layout_lateral.setContentsMargins(22, 22, 22, 22)
+        layout_lateral.setSpacing(12)
 
-        form_layout.addWidget(QLabel("Usuario seleccionado:"))
-        self.txt_usuario = QLineEdit()
-        self.txt_usuario.setReadOnly(True)
-        self.txt_usuario.setText(self.nombre_usuario)
-        form_layout.addWidget(self.txt_usuario)
+        titulo_panel = QLabel("ACCIONES DEL ROL")
+        titulo_panel.setObjectName("TituloSeccion")
+        titulo_panel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout_lateral.addWidget(titulo_panel)
 
-        form_layout.addWidget(QLabel("ID del rol:"))
+        lbl_id = QLabel("ID del rol seleccionado")
+        lbl_id.setObjectName("Etiqueta")
+        layout_lateral.addWidget(lbl_id)
+
         self.txt_idrol = QLineEdit()
         self.txt_idrol.setReadOnly(True)
-        form_layout.addWidget(self.txt_idrol)
+        layout_lateral.addWidget(self.txt_idrol)
 
-        form_layout.addWidget(QLabel("Nombre del rol:"))
+        lbl_nombre = QLabel("Nombre del rol")
+        lbl_nombre.setObjectName("Etiqueta")
+        layout_lateral.addWidget(lbl_nombre)
+
         self.txt_nombre = QLineEdit()
-        form_layout.addWidget(self.txt_nombre)
+        self.txt_nombre.setPlaceholderText("Ejemplo: Aseadora")
+        layout_lateral.addWidget(self.txt_nombre)
 
-        form_layout.addSpacing(15)
+        layout_lateral.addSpacing(8)
 
-        self.btn_agregar = QPushButton("Agregar Rol")
-        self.btn_agregar.setObjectName("BtnPrincipal")
-        self.btn_agregar.clicked.connect(self.abrir_dialogo_agregar_rol)
-        form_layout.addWidget(self.btn_agregar)
+        self.btn_guardar = QPushButton("Guardar")
+        self.btn_guardar.setObjectName("BtnPrincipal")
+        self.btn_guardar.clicked.connect(self.guardar_rol)
+        layout_lateral.addWidget(self.btn_guardar)
 
         self.btn_editar = QPushButton("Editar")
         self.btn_editar.setObjectName("BtnAccion")
         self.btn_editar.clicked.connect(self.editar_rol)
-        form_layout.addWidget(self.btn_editar)
+        layout_lateral.addWidget(self.btn_editar)
 
         self.btn_eliminar = QPushButton("Eliminar")
         self.btn_eliminar.setObjectName("BtnEliminar")
         self.btn_eliminar.clicked.connect(self.eliminar_rol)
-        form_layout.addWidget(self.btn_eliminar)
+        layout_lateral.addWidget(self.btn_eliminar)
 
-        self.btn_asignar = QPushButton("Asignar al Usuario")
-        self.btn_asignar.setObjectName("BtnPrincipal")
-        self.btn_asignar.clicked.connect(self.asignar_rol_usuario)
-        form_layout.addWidget(self.btn_asignar)
+        self.btn_limpiar = QPushButton("Limpiar")
+        self.btn_limpiar.setObjectName("BtnAccion")
+        self.btn_limpiar.clicked.connect(self.limpiar_campos)
+        layout_lateral.addWidget(self.btn_limpiar)
 
-        self.btn_nuevo = QPushButton("Nuevo Registro")
-        self.btn_nuevo.setObjectName("BtnAccion")
-        self.btn_nuevo.clicked.connect(self.limpiar_formulario)
-        form_layout.addWidget(self.btn_nuevo)
+        self.btn_volver = QPushButton("Volver al Menú")
+        self.btn_volver.setObjectName("BtnAccion")
+        self.btn_volver.clicked.connect(self.volver_al_menu)
+        layout_lateral.addWidget(self.btn_volver)
 
-        form_layout.addStretch()
-        main_layout.addWidget(self.panel)
+        layout_lateral.addStretch()
 
-    def abrir_dialogo_agregar_rol(self):
-        dialogo = DialogoAgregarRol(self)
+        self.layout_principal.addWidget(panel_lateral)
 
-        if dialogo.exec():
-            nombre = dialogo.obtener_nombre_rol()
+    def guardar_rol(self):
+        nombre = self.txt_nombre.text().strip()
 
-            if not nombre:
-                QMessageBox.warning(self, "Validación", "Debe ingresar el nombre del rol.")
-                return
+        if not nombre:
+            QMessageBox.warning(self, "Error", "Debe ingresar un nombre de rol.")
+            return
 
-            rol = Rol(nombrerol=nombre)
-            resultado = rol.Guardar()
-
-            if resultado:
+        try:
+            nuevo = ClaseRol(nombrerol=nombre)
+            if nuevo.Guardar():
                 QMessageBox.information(self, "Éxito", "Rol guardado correctamente.")
-                self.cargar_roles_tabla()
-                self.limpiar_formulario()
+                self.cargar_roles()
+                self.limpiar_campos()
             else:
-                detalle = rol.ultimo_error if rol.ultimo_error else "Error desconocido."
-                QMessageBox.critical(self, "Error", f"No se pudo guardar el rol.\n\nDetalle:\n{detalle}")
-
-    def cargar_roles_tabla(self):
-        self.table.setRowCount(0)
-        lista = self.rol.Listar()
-
-        if lista:
-            for fila_num, fila in enumerate(lista):
-                self.table.insertRow(fila_num)
-
-                item_id = QTableWidgetItem(str(fila[0]))
-                item_nombre = QTableWidgetItem(str(fila[1]))
-
-                item_id.setForeground(Qt.GlobalColor.white)
-                item_nombre.setForeground(Qt.GlobalColor.white)
-
-                self.table.setItem(fila_num, 0, item_id)
-                self.table.setItem(fila_num, 1, item_nombre)
-
-    def cargar_datos_al_formulario(self, item):
-        fila = item.row()
-        self.txt_idrol.setText(self.table.item(fila, 0).text())
-        self.txt_nombre.setText(self.table.item(fila, 1).text())
-        self.id_rol_seleccionado = int(self.table.item(fila, 0).text())
-
-    def limpiar_formulario(self):
-        self.txt_idrol.clear()
-        self.txt_nombre.clear()
-        self.id_rol_seleccionado = None
-        self.table.clearSelection()
+                QMessageBox.warning(self, "Error", "No se pudo guardar el rol.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
 
     def editar_rol(self):
-        if not self.txt_idrol.text().strip().isdigit():
-            QMessageBox.warning(self, "Error", "Seleccione un rol válido.")
+        if not self.id_rol_seleccionado:
+            QMessageBox.warning(self, "Error", "Seleccione un rol para editar.")
             return
 
         nombre = self.txt_nombre.text().strip()
         if not nombre:
-            QMessageBox.warning(self, "Validación", "Debe ingresar el nombre del rol.")
+            QMessageBox.warning(self, "Error", "Debe ingresar un nombre de rol.")
             return
 
-        rol = Rol(idrol=int(self.txt_idrol.text()), nombrerol=nombre)
-        resultado = rol.Editar()
-
-        if resultado:
-            QMessageBox.information(self, "Éxito", "Rol editado correctamente.")
-            self.cargar_roles_tabla()
-            self.limpiar_formulario()
-        else:
-            detalle = rol.ultimo_error if rol.ultimo_error else "Error desconocido."
-            QMessageBox.critical(self, "Error", f"No se pudo editar el rol.\n\nDetalle:\n{detalle}")
+        try:
+            rol = ClaseRol(nombrerol=nombre)
+            if rol.Editar(self.id_rol_seleccionado):
+                QMessageBox.information(self, "Éxito", "Rol editado correctamente.")
+                self.cargar_roles()
+                self.limpiar_campos()
+            else:
+                QMessageBox.warning(self, "Error", "No se pudo editar el rol.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
 
     def eliminar_rol(self):
-        if not self.txt_idrol.text().strip().isdigit():
-            QMessageBox.warning(self, "Error", "Seleccione un rol válido.")
+        if not self.id_rol_seleccionado:
+            QMessageBox.warning(self, "Error", "Seleccione un rol para eliminar.")
             return
 
-        confirmacion = QMessageBox.question(
+        respuesta = QMessageBox.question(
             self,
-            "Confirmar eliminación",
+            "Confirmar",
             "¿Desea eliminar este rol?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
 
-        if confirmacion == QMessageBox.StandardButton.Yes:
-            rol = Rol()
-            resultado = rol.Eliminar(int(self.txt_idrol.text()))
+        if respuesta == QMessageBox.StandardButton.Yes:
+            try:
+                rol = ClaseRol()
+                if rol.Eliminar(self.id_rol_seleccionado):
+                    QMessageBox.information(self, "Éxito", "Rol eliminado correctamente.")
+                    self.cargar_roles()
+                    self.limpiar_campos()
+                else:
+                    QMessageBox.warning(self, "Error", "No se pudo eliminar el rol.")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", str(e))
 
-            if resultado:
-                QMessageBox.information(self, "Éxito", "Rol eliminado correctamente.")
-                self.cargar_roles_tabla()
-                self.limpiar_formulario()
-            else:
-                detalle = rol.ultimo_error if rol.ultimo_error else "Error desconocido."
-                QMessageBox.critical(self, "Error", f"No se pudo eliminar el rol.\n\nDetalle:\n{detalle}")
+    def cargar_roles(self):
+        registros = self.rol.Listar()
+        self.tabla.setRowCount(len(registros))
 
-    def asignar_rol_usuario(self):
-        if self.idusuario is None:
-            QMessageBox.warning(self, "Error", "No hay un usuario seleccionado para asignar.")
-            return
+        for fila, registro in enumerate(registros):
+            self.tabla.setItem(fila, 0, QTableWidgetItem(str(registro[0])))
+            self.tabla.setItem(fila, 1, QTableWidgetItem(str(registro[1])))
 
-        if not self.txt_idrol.text().strip().isdigit():
-            QMessageBox.warning(self, "Error", "Seleccione un rol para asignar.")
-            return
+    def seleccionar_rol(self, fila, columna):
+        self.id_rol_seleccionado = int(self.tabla.item(fila, 0).text())
+        self.txt_idrol.setText(self.tabla.item(fila, 0).text())
+        self.txt_nombre.setText(self.tabla.item(fila, 1).text())
 
-        rol = Rol()
-        resultado = rol.AsignarRolAUsuario(self.idusuario, int(self.txt_idrol.text()))
+    def limpiar_campos(self):
+        self.txt_idrol.clear()
+        self.txt_nombre.clear()
+        self.id_rol_seleccionado = None
+        self.tabla.clearSelection()
 
-        if resultado:
-            QMessageBox.information(
-                self,
-                "Éxito",
-                f"Rol asignado correctamente a {self.nombre_usuario}."
-            )
-        else:
-            detalle = rol.ultimo_error if rol.ultimo_error else "Error desconocido."
-            QMessageBox.critical(self, "Error", f"No se pudo asignar el rol.\n\nDetalle:\n{detalle}")
+    def volver_al_menu(self):
+        """Vuelve al menú principal"""
+        if self.parent_menu:
+            self.parent_menu.show()
+        self.close()
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    ventana = FormRol(None, "Usuario sin seleccionar")
+    ventana = FormRol()
     ventana.show()
     sys.exit(app.exec())
