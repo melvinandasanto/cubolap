@@ -46,6 +46,7 @@ class FormLogin(QMainWindow):
                 background-color: #3374ad;
             }}
         """)
+        self.init_ui()
         
     # Inicializa la interfaz de usuario
     def init_ui(self):
