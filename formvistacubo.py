@@ -12,6 +12,7 @@ from claseconexiones import ClaseConexiones
 from constructormodelodatos import ConstructorModeloDatos
 
 
+# Clase para la vista previa dinámica del cubo OLAP
 class VistaPreviaDinamica(QMainWindow):
     def __init__(self, tipo_origen, id_origen, parent_menu=None):
         super().__init__()

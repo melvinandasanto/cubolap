@@ -9,6 +9,7 @@ from claseLogin import Autenticacion
 from SesionGlobal import SesionUsuario
 
 
+# Clase para el formulario de login
 class FormLogin(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -46,8 +47,7 @@ class FormLogin(QMainWindow):
             }}
         """)
         
-        self.init_ui()
-    
+    # Inicializa la interfaz de usuario
     def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -111,6 +111,7 @@ class FormLogin(QMainWindow):
         layout.addWidget(container)
         layout.addStretch()
     
+    # Inicia la sesión del usuario
     def iniciar_sesion(self):
         usuario = self.user_entry.text()
         contrasena = self.pass_entry.text()

@@ -11,6 +11,7 @@ from claserutas import ClaseRutas
 from claseconexiones import ClaseConexiones
 
 
+# Clase para seleccionar el origen de datos para el cubo OLAP
 class SeleccionOrigenOLAP(QMainWindow):
     def __init__(self, parent_menu=None):
         super().__init__()

@@ -13,6 +13,7 @@ from claseLogin import Autenticacion
 from claserol import ClaseRol
 from SesionGlobal import SesionUsuario
 
+# Clase para gestionar usuarios del sistema
 class GestionUsuariosApp(QMainWindow):
     def __init__(self, parent_menu=None, es_primera_inicializacion=False):
         super().__init__()

@@ -8,6 +8,7 @@ from PyQt6.QtGui import QFont
 from SesionGlobal import SesionUsuario
 
 
+# Clase para el menú principal del sistema OLAP
 class MenuPrincipalOLAP(QMainWindow):
     def __init__(self):
         super().__init__()

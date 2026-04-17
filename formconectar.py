@@ -8,6 +8,7 @@ from claseconectar import Conexion
 from menu import Menu
 
 
+# Clase para el formulario de conexión a base de datos
 class FormConexion(QWidget):
     def __init__(self):
         super().__init__()

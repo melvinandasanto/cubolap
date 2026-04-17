@@ -9,6 +9,7 @@ from PyQt6.QtCore import Qt
 from claseconexiones import ClaseConexiones
 
 
+# Clase para administrar conexiones de base de datos
 class AdministradorConexiones(QMainWindow):
     def __init__(self, parent_menu=None):
         super().__init__()

@@ -11,6 +11,7 @@ from claserutas import ClaseRutas
 from claseusuario import Usuario
 
 
+# Clase para gestionar rutas de archivos
 class FormRutas(QMainWindow):
     def __init__(self, parent_menu=None):
         super().__init__()

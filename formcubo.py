@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
-#clase para la ventana de grficos 
+# Clase para mostrar gráficos en ventana emergente
 class VentanaGrafico(QDialog):
     def __init__(self, titulo, tipo, serie, eje_x, eje_y, parent=None):
         super().__init__(parent)
@@ -48,6 +48,7 @@ class VentanaGrafico(QDialog):
 
 #fin de la clase de la ventana de grficos
 
+# Clase principal para el dashboard de análisis OLAP
 class PantallaAnalisisDinamico(QMainWindow):
     def __init__(self, modelo_datos=None, parent_menu=None):
         super().__init__()
@@ -94,9 +95,7 @@ class PantallaAnalisisDinamico(QMainWindow):
         self.init_ui()
         self.cargar_modelo()
 
-    # =========================================================
-    # NUEVO MÉTODO PARA MOSTRAR LA VENTANA EMERGENTE
-    # =========================================================
+    # Método para mostrar la ventana emergente con el gráfico
     def mostrar_ventana_grafico(self, tipo, titulo):
         """Abre la ventana emergente con el gráfico seleccionado"""
         if self.resumen_actual_grafico is None:
@@ -126,9 +125,7 @@ class PantallaAnalisisDinamico(QMainWindow):
         )
         ventana.exec()
 
-    # =========================================================
-    # UI
-    # =========================================================
+    # Inicializa la interfaz de usuario
     def init_ui(self):
         central = QWidget()
         self.setCentralWidget(central)
@@ -297,9 +294,7 @@ class PantallaAnalisisDinamico(QMainWindow):
 
         # Área para gráficos
 
-    # =========================================================
-    # CARGA DEL MODELO
-    # =========================================================
+    # Carga el modelo de datos y configura las entidades
     def cargar_modelo(self):
         if not self.modelo_datos or not self.modelo_datos.get("entidades"):
             QMessageBox.warning(self, "Aviso", "No se recibió un modelo de datos válido.")
@@ -367,7 +362,7 @@ class PantallaAnalisisDinamico(QMainWindow):
 
     # =========================================================
     # CONFIGURACIÓN
-    # =========================================================
+    # Cambia la configuración del modelo de datos seleccionado
     def cambiar_configuracion_modelo(self):
         hechos = self.combo_hechos.currentText().strip()
         dim1 = self.combo_dim1_entidad.currentText().strip()
@@ -608,6 +603,7 @@ class PantallaAnalisisDinamico(QMainWindow):
 
         return df_merge
 
+    # Construye el dataframe para el análisis OLAP
     def construir_dataframe_analisis(self):
         if self.df_hechos is None or self.df_hechos.empty:
             raise Exception("La tabla de hechos no tiene datos.")
@@ -676,9 +672,7 @@ class PantallaAnalisisDinamico(QMainWindow):
         except Exception:
             return str(valor)
 
-    # =========================================================
-    # ANÁLISIS
-    # =========================================================
+    # Refresca el análisis y muestra los resultados
     def refrescar_analisis(self):
         campo_filas = self.combo_filas.currentText().strip()
         campo_columnas = self.combo_columnas.currentText().strip()

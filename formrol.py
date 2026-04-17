@@ -8,6 +8,7 @@ from PyQt6.QtCore import Qt
 from claserol import ClaseRol
 
 
+# Clase para gestionar roles de usuario
 class FormRol(QMainWindow):
     def __init__(self, parent_menu=None):
         super().__init__()
